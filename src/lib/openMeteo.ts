@@ -4,6 +4,7 @@
 import type {
   CurrentConditions,
   DailyForecast,
+  GridPoint,
   LatLon,
   PointForecast,
 } from "@/types/weather";
@@ -76,6 +77,84 @@ function mapDaily(
     weatherCode: raw.weather_code[i] ?? 0,
   }));
 }
+
+// ── Grid forecast (multi-point) ──────────────────────────────────────────────
+
+const GRID_FIELDS = [
+  "temperature_2m",
+  "wind_speed_10m",
+  "wind_direction_10m",
+  "precipitation",
+  "soil_temperature_6cm",
+] as const;
+
+interface GridOpenMeteoItem {
+  latitude: number;
+  longitude: number;
+  current: {
+    temperature_2m: number;
+    wind_speed_10m: number;
+    wind_direction_10m: number;
+    precipitation: number;
+    soil_temperature_6cm?: number;
+  };
+}
+
+function windComponents(speed: number, direction: number): { u: number; v: number } {
+  const rad = (direction * Math.PI) / 180;
+  return { u: -speed * Math.sin(rad), v: -speed * Math.cos(rad) };
+}
+
+// 10-minute module-level cache — avoids hammering the API on re-renders
+let _gridCache: { points: GridPoint[]; expires: number } | null = null;
+
+/**
+ * Fetch current conditions for every point in the NL grid in a single
+ * Open-Meteo batch request (comma-separated lat/lon arrays).
+ */
+export async function getGridForecast(locations: LatLon[]): Promise<GridPoint[]> {
+  if (_gridCache && Date.now() < _gridCache.expires) {
+    return _gridCache.points;
+  }
+
+  const latStr = locations.map((p) => p.lat.toFixed(3)).join(",");
+  const lonStr = locations.map((p) => p.lon.toFixed(3)).join(",");
+  const url =
+    `${FORECAST_URL}?latitude=${latStr}&longitude=${lonStr}` +
+    `&current=${GRID_FIELDS.join(",")}&wind_speed_unit=kmh` +
+    `&timezone=Europe%2FAmsterdam`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Open-Meteo grid request failed: ${res.status} ${res.statusText}`);
+  }
+
+  const raw = (await res.json()) as GridOpenMeteoItem | GridOpenMeteoItem[];
+  const items = Array.isArray(raw) ? raw : [raw];
+
+  const points: GridPoint[] = items.map((item) => {
+    const { u, v } = windComponents(
+      item.current.wind_speed_10m,
+      item.current.wind_direction_10m,
+    );
+    return {
+      lat: item.latitude,
+      lon: item.longitude,
+      temperature: item.current.temperature_2m,
+      windSpeed: item.current.wind_speed_10m,
+      windDirection: item.current.wind_direction_10m,
+      windU: u,
+      windV: v,
+      precipitation: item.current.precipitation,
+      soilTemperature: item.current.soil_temperature_6cm,
+    };
+  });
+
+  _gridCache = { points, expires: Date.now() + 10 * 60 * 1000 };
+  return points;
+}
+
+// ── Single-point forecast ────────────────────────────────────────────────────
 
 /** Fetch current conditions + 7-day daily forecast for a single point. */
 export async function getForecast(loc: LatLon): Promise<PointForecast> {

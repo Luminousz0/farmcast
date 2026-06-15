@@ -2,15 +2,19 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FarmMap } from "@/features/map/FarmMap";
 import { SearchPalette } from "@/features/map/SearchPalette";
+import { LayerSwitcher } from "@/features/map/LayerSwitcher";
 import { ConditionPanel } from "@/features/dashboard/ConditionPanel";
 import { usePointForecast } from "@/hooks/usePointForecast";
-import type { LatLon, NamedLocation } from "@/types/weather";
+import { useGridForecast } from "@/hooks/useGridForecast";
+import type { LatLon, NamedLocation, OverlayLayer } from "@/types/weather";
 
 export default function App() {
   const [selected, setSelected] = useState<LatLon | null>(null);
-  // Name comes from the search palette; null means the user clicked the map
   const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [activeLayer, setActiveLayer] = useState<OverlayLayer>("none");
+
   const { forecast, loading, error } = usePointForecast(selected);
+  const { gridPoints, loading: gridLoading } = useGridForecast();
 
   const handleMapSelect = (point: LatLon) => {
     setSelected(point);
@@ -30,7 +34,12 @@ export default function App() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <FarmMap selected={selected} onSelect={handleMapSelect} />
+      <FarmMap
+        selected={selected}
+        onSelect={handleMapSelect}
+        activeLayer={activeLayer}
+        gridPoints={gridPoints}
+      />
 
       {/* Top-left: brand wordmark */}
       <motion.header
@@ -46,7 +55,7 @@ export default function App() {
         </div>
       </motion.header>
 
-      {/* Top-right: search palette trigger */}
+      {/* Top-right: search palette */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -55,6 +64,15 @@ export default function App() {
       >
         <SearchPalette onSelect={handleSearchSelect} />
       </motion.div>
+
+      {/* Right-center: layer switcher */}
+      <div className="pointer-events-none absolute right-5 top-1/2 z-10 -translate-y-1/2">
+        <LayerSwitcher
+          activeLayer={activeLayer}
+          onChange={setActiveLayer}
+          loading={gridLoading}
+        />
+      </div>
 
       {/* Bottom hint when nothing is selected */}
       {!selected && (

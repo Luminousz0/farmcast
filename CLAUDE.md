@@ -102,16 +102,16 @@ Goal: a full-screen living NL map you can search, click, and read conditions fro
 - [x] Click map → floating glass panel showing that point's live metrics (temp, wind, precip, soil temp, humidity)
 - Verified: `npm run build` passes, dev server serves 200, Open-Meteo returns live NL data.
 
-**Session 2: Search + the glass panel**
-- [ ] ⌘K location search (Open-Meteo geocoding) + click-to-pick + "use my location"
-- [ ] Camera fly-to animation + marker on select
-- [ ] Polish the glass panel: metric layout, animated counters, 7-day mini trend chart, Framer Motion enter/exit
+**Session 2: Search + the glass panel** ✅ done (2026-06-15)
+- [x] ⌘K location search (Open-Meteo geocoding) + click-to-pick + "use my location"
+- [x] Camera fly-to animation + marker on select (was already wired in Session 1; confirmed working)
+- [x] Polish the glass panel: metric layout, animated counters, 7-day SVG sparkline, Framer Motion enter/exit
 
-**Session 3: The living overlays**
-- [ ] NL grid sampler + `getGridForecast(points[])` with caching
-- [ ] MapLibre heatmap from sampled scores (start: temperature) + layer switcher with animated cross-fade
-- [ ] Animated wind particle layer (WebGL wind from Open-Meteo wind)
-- [ ] Live rain radar overlay (RainViewer, looping)
+**Session 3: The living overlays** ✅ done (2026-06-15)
+- [x] NL grid sampler + `getGridForecast(points[])` with caching (88 pts, single batch request, 10-min cache)
+- [x] MapLibre heatmap from sampled scores (temperature) + layer switcher with animated cross-fade
+- [x] Animated wind particle layer (canvas bilinear-interpolated particle system, 1800 particles)
+- [x] Live rain radar overlay (RainViewer, looping 600 ms/frame)
 
 ### Phase 2 — From data to judgment
 Goal: turn the map and panel into actual farm advice.
