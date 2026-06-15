@@ -82,6 +82,7 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
       </div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
         className="h-16 w-full"
         aria-hidden
       >
