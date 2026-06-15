@@ -5,7 +5,6 @@ import { SearchPalette } from "@/features/map/SearchPalette";
 import { LayerSwitcher } from "@/features/map/LayerSwitcher";
 import { ConditionPanel } from "@/features/dashboard/ConditionPanel";
 import { usePointForecast } from "@/hooks/usePointForecast";
-import { useGridForecast } from "@/hooks/useGridForecast";
 import type { LatLon, NamedLocation, OverlayLayer } from "@/types/weather";
 
 export default function App() {
@@ -14,7 +13,6 @@ export default function App() {
   const [activeLayer, setActiveLayer] = useState<OverlayLayer>("none");
 
   const { forecast, loading, error } = usePointForecast(selected);
-  const { gridPoints, loading: gridLoading } = useGridForecast();
 
   const handleMapSelect = (point: LatLon) => {
     setSelected(point);
@@ -34,11 +32,11 @@ export default function App() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
+      {/* Full-bleed map — manages its own viewport grid internally */}
       <FarmMap
         selected={selected}
         onSelect={handleMapSelect}
         activeLayer={activeLayer}
-        gridPoints={gridPoints}
       />
 
       {/* Top-left: brand wordmark */}
@@ -55,7 +53,7 @@ export default function App() {
         </div>
       </motion.header>
 
-      {/* Top-right: search palette */}
+      {/* Top-right: ⌘K search palette */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -67,11 +65,7 @@ export default function App() {
 
       {/* Right-center: layer switcher */}
       <div className="pointer-events-none absolute right-5 top-1/2 z-10 -translate-y-1/2">
-        <LayerSwitcher
-          activeLayer={activeLayer}
-          onChange={setActiveLayer}
-          loading={gridLoading}
-        />
+        <LayerSwitcher activeLayer={activeLayer} onChange={setActiveLayer} />
       </div>
 
       {/* Bottom hint when nothing is selected */}

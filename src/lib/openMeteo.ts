@@ -105,24 +105,18 @@ function windComponents(speed: number, direction: number): { u: number; v: numbe
   return { u: -speed * Math.sin(rad), v: -speed * Math.cos(rad) };
 }
 
-// 10-minute module-level cache — avoids hammering the API on re-renders
-let _gridCache: { points: GridPoint[]; expires: number } | null = null;
-
 /**
- * Fetch current conditions for every point in the NL grid in a single
- * Open-Meteo batch request (comma-separated lat/lon arrays).
+ * Fetch current conditions for a set of points in a single batch request.
+ * Locations must be ordered consistently so callers can index into the result.
+ * Rate-limiting is handled by a debounce in the caller (FarmMap.tsx).
  */
 export async function getGridForecast(locations: LatLon[]): Promise<GridPoint[]> {
-  if (_gridCache && Date.now() < _gridCache.expires) {
-    return _gridCache.points;
-  }
-
-  const latStr = locations.map((p) => p.lat.toFixed(3)).join(",");
-  const lonStr = locations.map((p) => p.lon.toFixed(3)).join(",");
+  const latStr = locations.map((p) => p.lat.toFixed(4)).join(",");
+  const lonStr = locations.map((p) => p.lon.toFixed(4)).join(",");
+  // Build URL manually — URLSearchParams encodes commas, Open-Meteo needs them raw.
   const url =
     `${FORECAST_URL}?latitude=${latStr}&longitude=${lonStr}` +
-    `&current=${GRID_FIELDS.join(",")}&wind_speed_unit=kmh` +
-    `&timezone=Europe%2FAmsterdam`;
+    `&current=${GRID_FIELDS.join(",")}&wind_speed_unit=kmh&timezone=auto`;
 
   const res = await fetch(url);
   if (!res.ok) {
@@ -132,7 +126,7 @@ export async function getGridForecast(locations: LatLon[]): Promise<GridPoint[]>
   const raw = (await res.json()) as GridOpenMeteoItem | GridOpenMeteoItem[];
   const items = Array.isArray(raw) ? raw : [raw];
 
-  const points: GridPoint[] = items.map((item) => {
+  return items.map((item) => {
     const { u, v } = windComponents(
       item.current.wind_speed_10m,
       item.current.wind_direction_10m,
@@ -149,9 +143,6 @@ export async function getGridForecast(locations: LatLon[]): Promise<GridPoint[]>
       soilTemperature: item.current.soil_temperature_6cm,
     };
   });
-
-  _gridCache = { points, expires: Date.now() + 10 * 60 * 1000 };
-  return points;
 }
 
 // ── Single-point forecast ────────────────────────────────────────────────────

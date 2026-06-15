@@ -52,6 +52,14 @@ export interface PointForecast {
 
 export type OverlayLayer = 'temperature' | 'wind' | 'rain' | 'none';
 
+/** Axis-aligned bounding box in lat/lon degrees. */
+export interface Bbox {
+  latMin: number;
+  latMax: number;
+  lonMin: number;
+  lonMax: number;
+}
+
 /** One sampled point in the country-wide condition grid. */
 export interface GridPoint extends LatLon {
   temperature: number;

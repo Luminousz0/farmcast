@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import Map, {
   AttributionControl,
   Marker,
@@ -6,21 +6,60 @@ import Map, {
   type MapRef,
 } from "react-map-gl/maplibre";
 import { motion } from "framer-motion";
-import type { GridPoint, LatLon, OverlayLayer } from "@/types/weather";
+import type { Bbox, GridPoint, LatLon, OverlayLayer } from "@/types/weather";
 import { DARK_MAP_STYLE, INTRO_VIEW, NL_VIEW } from "./mapStyle";
 import { HeatmapLayer } from "./HeatmapLayer";
 import { RainRadarLayer } from "./RainRadarLayer";
 import { WindParticles } from "./WindParticles";
+import { generateViewportGrid } from "@/lib/gridSampler";
+import { getGridForecast } from "@/lib/openMeteo";
 
 interface FarmMapProps {
   selected: LatLon | null;
   onSelect: (point: LatLon) => void;
   activeLayer: OverlayLayer;
-  gridPoints: GridPoint[];
 }
 
-export function FarmMap({ selected, onSelect, activeLayer, gridPoints }: FarmMapProps) {
+export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
   const mapRef = useRef<MapRef | null>(null);
+
+  // Viewport-based grid: refetched after every moveend (worldwide coverage).
+  const [gridPoints, setGridPoints] = useState<GridPoint[]>([]);
+  const [gridBbox, setGridBbox] = useState<Bbox>({
+    latMin: 50.75, latMax: 53.55, lonMin: 3.35, lonMax: 7.22,
+  });
+  const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchingRef = useRef(false);
+
+  const fetchViewportGrid = useCallback(async () => {
+    const map = mapRef.current?.getMap();
+    if (!map || fetchingRef.current) return;
+
+    const zoom = map.getZoom();
+    // Too zoomed out — the bbox would span too many degrees for a useful 6×6 grid.
+    if (zoom < 3) return;
+
+    const b = map.getBounds();
+    if (!b) return;
+
+    const bbox: Bbox = {
+      latMin: Math.max(-85, b.getSouth()),
+      latMax: Math.min(85, b.getNorth()),
+      lonMin: b.getWest(),
+      lonMax: b.getEast(),
+    };
+
+    fetchingRef.current = true;
+    try {
+      const pts = await getGridForecast(generateViewportGrid(bbox));
+      setGridPoints(pts);
+      setGridBbox(bbox);
+    } catch {
+      // Keep existing data on API error; don't discard the last good grid.
+    } finally {
+      fetchingRef.current = false;
+    }
+  }, []);
 
   const handleLoad = useCallback(() => {
     const map = mapRef.current?.getMap();
@@ -41,14 +80,14 @@ export function FarmMap({ selected, onSelect, activeLayer, gridPoints }: FarmMap
       essential: true,
       curve: 1.4,
     });
+    // flyTo fires moveend when it lands, which triggers the first grid fetch.
   }, []);
 
-  useEffect(() => {
-    if (!selected) return;
-    mapRef.current
-      ?.getMap()
-      .easeTo({ center: [selected.lon, selected.lat], duration: 1200 });
-  }, [selected]);
+  // Debounce: wait 700 ms after the map stops moving before fetching.
+  const handleMoveEnd = useCallback(() => {
+    if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
+    fetchTimerRef.current = setTimeout(fetchViewportGrid, 700);
+  }, [fetchViewportGrid]);
 
   const handleClick = useCallback(
     (e: MapLayerMouseEvent) => {
@@ -64,6 +103,7 @@ export function FarmMap({ selected, onSelect, activeLayer, gridPoints }: FarmMap
         mapStyle={DARK_MAP_STYLE}
         initialViewState={INTRO_VIEW}
         onLoad={handleLoad}
+        onMoveEnd={handleMoveEnd}
         onClick={handleClick}
         attributionControl={false}
         cursor="crosshair"
@@ -71,6 +111,7 @@ export function FarmMap({ selected, onSelect, activeLayer, gridPoints }: FarmMap
       >
         <AttributionControl compact position="bottom-left" />
 
+        {/* These must be inside <Map> so they have access to the map context. */}
         <HeatmapLayer gridPoints={gridPoints} activeLayer={activeLayer} />
         <RainRadarLayer activeLayer={activeLayer} />
 
@@ -89,8 +130,13 @@ export function FarmMap({ selected, onSelect, activeLayer, gridPoints }: FarmMap
         )}
       </Map>
 
-      {activeLayer === "wind" && gridPoints.length > 0 && (
-        <WindParticles mapRef={mapRef} gridPoints={gridPoints} />
+      {/* Canvas overlay — outside <Map> but inside the wrapper, z-stacked on top. */}
+      {activeLayer === "wind" && (
+        <WindParticles
+          mapRef={mapRef}
+          gridPoints={gridPoints}
+          gridBbox={gridBbox}
+        />
       )}
     </div>
   );
