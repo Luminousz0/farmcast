@@ -68,6 +68,33 @@ export default function App() {
         <LayerSwitcher activeLayer={activeLayer} onChange={setActiveLayer} />
       </div>
 
+      {/* Heatmap legend — only meaningful for the temperature overlay */}
+      {activeLayer === "temperature" && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="glass pointer-events-none absolute bottom-6 left-5 z-10 px-3 py-2.5"
+        >
+          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-white/40">
+            Temperatuur
+          </div>
+          <div
+            className="h-2 w-40 rounded-full"
+            style={{
+              background:
+                "linear-gradient(90deg, rgb(50,100,230), rgb(0,180,160), rgb(70,215,55), rgb(245,175,0), rgb(235,70,20), rgb(180,0,50))",
+            }}
+          />
+          <div className="mt-1 flex justify-between text-[10px] tabular-nums text-white/50">
+            <span>0°</span>
+            <span>15°</span>
+            <span>30°+</span>
+          </div>
+        </motion.div>
+      )}
+
       {/* Bottom hint when nothing is selected */}
       {!selected && (
         <motion.div

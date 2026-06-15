@@ -33,6 +33,7 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
   const [results, setResults] = useState<GeoResult[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [locating, setLocating] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,6 +57,7 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
       setQuery("");
       setResults([]);
       setActiveIdx(0);
+      setGeoError(null);
       // Tiny delay so the portal renders before we try to focus
       const id = setTimeout(() => inputRef.current?.focus(), 30);
       return () => clearTimeout(id);
@@ -97,7 +99,11 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
   );
 
   const useMyLocation = useCallback(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setGeoError("Geolocatie wordt niet ondersteund door deze browser.");
+      return;
+    }
+    setGeoError(null);
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -109,7 +115,14 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
         setLocating(false);
         setOpen(false);
       },
-      () => setLocating(false),
+      (err) => {
+        setLocating(false);
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? "Locatietoegang geweigerd. Sta het toe of zoek handmatig."
+            : "Kon je locatie niet bepalen. Probeer het opnieuw.",
+        );
+      },
     );
   }, [onSelect]);
 
@@ -197,6 +210,12 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
                         {locating ? "Locatie bepalen…" : "Gebruik mijn locatie"}
                       </span>
                     </button>
+
+                    {geoError && (
+                      <div className="border-t border-stop/20 bg-stop/10 px-4 py-2.5 text-xs text-stop">
+                        {geoError}
+                      </div>
+                    )}
 
                     {results.length > 0 && (
                       <div className="border-t border-white/[0.06]">

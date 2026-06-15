@@ -93,8 +93,8 @@ export function WindParticles({ mapRef, gridPoints, gridBbox }: WindParticlesPro
         }
 
         const from = map.project([p.lon, p.lat]);
-        const dx = (wind.u / speed) * speed * SPEED_SCALE;
-        const dy = -(wind.v / speed) * speed * SPEED_SCALE; // screen y is inverted
+        const dx = wind.u * SPEED_SCALE;
+        const dy = -wind.v * SPEED_SCALE; // screen y is inverted (north = up)
         const nx = from.x + dx;
         const ny = from.y + dy;
 

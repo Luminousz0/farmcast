@@ -1,4 +1,4 @@
-import type { Bbox, GridPoint, LatLon, OverlayLayer } from '@/types/weather';
+import type { Bbox, GridPoint, LatLon } from '@/types/weather';
 
 export const NL_BBOX: Bbox = { latMin: 50.75, latMax: 53.55, lonMin: 3.35, lonMax: 7.22 };
 
@@ -65,15 +65,14 @@ export function interpolateWind(
   };
 }
 
-/** Normalize a value into [0,1] for heatmap weight. */
-export function scoreForLayer(p: GridPoint, layer: OverlayLayer): number {
-  switch (layer) {
-    // -10 °C → 0.0, 0 °C → 0.25, 15 °C → 0.63, 30 °C → 1.0
-    case 'temperature': return clamp((p.temperature + 10) / 40, 0, 1);
-    case 'wind':        return clamp(p.windSpeed / 50, 0, 1);
-    case 'rain':        return clamp(p.precipitation / 5, 0, 1);
-    default:            return 0;
-  }
+/**
+ * Normalize temperature into [0,1] for the heatmap weight.
+ * -10 °C → 0.0, 0 °C → 0.25, 15 °C → 0.63, 30 °C → 1.0.
+ * (Wind uses the particle layer and rain uses radar tiles, so only the
+ * temperature overlay is heatmap-backed.)
+ */
+export function temperatureScore(p: GridPoint): number {
+  return clamp((p.temperature + 10) / 40, 0, 1);
 }
 
 function clamp(v: number, lo: number, hi: number) {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Map, {
   AttributionControl,
   Marker,
@@ -23,13 +23,18 @@ interface FarmMapProps {
 export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
   const mapRef = useRef<MapRef | null>(null);
 
-  // Viewport-based grid: refetched after every moveend (worldwide coverage).
+  // Viewport-based grid: refetched after moveend, but only while a layer that
+  // actually consumes it (heatmap / wind particles) is active.
   const [gridPoints, setGridPoints] = useState<GridPoint[]>([]);
   const [gridBbox, setGridBbox] = useState<Bbox>({
     latMin: 50.75, latMax: 53.55, lonMin: 3.35, lonMax: 7.22,
   });
+  const [gridLoading, setGridLoading] = useState(false);
   const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchingRef = useRef(false);
+
+  // Only the temperature heatmap and wind particles read the sampled grid.
+  const needsGrid = activeLayer === "temperature" || activeLayer === "wind";
 
   const fetchViewportGrid = useCallback(async () => {
     const map = mapRef.current?.getMap();
@@ -50,6 +55,7 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
     };
 
     fetchingRef.current = true;
+    setGridLoading(true);
     try {
       const pts = await getGridForecast(generateViewportGrid(bbox));
       setGridPoints(pts);
@@ -58,20 +64,22 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
       // Keep existing data on API error; don't discard the last good grid.
     } finally {
       fetchingRef.current = false;
+      setGridLoading(false);
     }
   }, []);
+
+  // Fetch immediately when switching into a layer that needs the grid, using
+  // the current viewport — so the overlay isn't blank until the next pan.
+  useEffect(() => {
+    if (needsGrid) fetchViewportGrid();
+  }, [needsGrid, fetchViewportGrid]);
 
   const handleLoad = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
 
-    try {
-      (map as unknown as { setProjection?: (p: unknown) => void }).setProjection?.(
-        { type: "globe" },
-      );
-    } catch {
-      /* raster mercator fallback */
-    }
+    // Globe projection (maplibre v5+) gives the cinematic curved-earth intro.
+    map.setProjection({ type: "globe" });
 
     map.flyTo({
       center: [NL_VIEW.longitude, NL_VIEW.latitude],
@@ -81,22 +89,20 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
       curve: 1.4,
     });
 
-    // Globe projection creates a dark atmospheric vignette after the intro —
-    // switch back to flat mercator once the fly-in lands.
-    map.once('moveend', () => {
-      try {
-        (map as unknown as { setProjection?: (p: unknown) => void }).setProjection?.(
-          { type: 'mercator' },
-        );
-      } catch { /* no-op */ }
+    // The globe's atmospheric vignette is great for the fly-in but muddies the
+    // flat condition overlays — drop back to mercator once the camera lands.
+    map.once("moveend", () => {
+      map.setProjection({ type: "mercator" });
     });
   }, []);
 
-  // Debounce: wait 700 ms after the map stops moving before fetching.
+  // Debounce: wait 700 ms after the map stops moving before fetching. Only
+  // refetch while a grid-backed layer is active (saves free-tier API calls).
   const handleMoveEnd = useCallback(() => {
+    if (!needsGrid) return;
     if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
     fetchTimerRef.current = setTimeout(fetchViewportGrid, 700);
-  }, [fetchViewportGrid]);
+  }, [fetchViewportGrid, needsGrid]);
 
   const handleClick = useCallback(
     (e: MapLayerMouseEvent) => {
@@ -146,6 +152,14 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
           gridPoints={gridPoints}
           gridBbox={gridBbox}
         />
+      )}
+
+      {/* Overlay data is loading for a grid-backed layer */}
+      {needsGrid && gridLoading && (
+        <div className="glass pointer-events-none absolute left-1/2 top-5 z-10 flex -translate-x-1/2 items-center gap-2 px-3 py-1.5 text-xs text-white/70">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
+          Condities laden…
+        </div>
       )}
     </div>
   );

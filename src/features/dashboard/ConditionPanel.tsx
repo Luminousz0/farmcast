@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import { describeWeatherCode } from "@/lib/weatherCode";
@@ -128,6 +129,15 @@ export function ConditionPanel({
 }: ConditionPanelProps) {
   const current = forecast?.current;
   const weather = current ? describeWeatherCode(current.weatherCode) : null;
+
+  // Esc closes the panel (matches the search palette's behaviour).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
     <AnimatePresence>

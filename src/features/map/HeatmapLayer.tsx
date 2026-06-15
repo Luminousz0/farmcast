@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Source, Layer } from 'react-map-gl/maplibre';
 import type { GridPoint, OverlayLayer } from '@/types/weather';
-import { scoreForLayer } from '@/lib/gridSampler';
+import { temperatureScore } from '@/lib/gridSampler';
 
 interface HeatmapLayerProps {
   gridPoints: GridPoint[];
@@ -17,7 +17,7 @@ export function HeatmapLayer({ gridPoints, activeLayer }: HeatmapLayerProps) {
       features: gridPoints.map((p) => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [p.lon, p.lat] as [number, number] },
-        properties: { score: scoreForLayer(p, 'temperature'), temperature: p.temperature },
+        properties: { score: temperatureScore(p), temperature: p.temperature },
       })),
     }),
     [gridPoints],
