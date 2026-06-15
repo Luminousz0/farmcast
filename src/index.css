@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: #070b14;
+  color: #e6edf7;
+  font-family: "Inter Tight", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* Frosted glass surface used by floating panels */
+@layer components {
+  .glass {
+    @apply rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-glass;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* MapLibre attribution: keep it subtle on the dark theme */
+.maplibregl-ctrl-attrib {
+  background: rgba(7, 11, 20, 0.6) !important;
+  color: #8aa0bd !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: #aebfd8 !important;
+}
