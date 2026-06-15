@@ -68,7 +68,8 @@ export function interpolateWind(
 /** Normalize a value into [0,1] for heatmap weight. */
 export function scoreForLayer(p: GridPoint, layer: OverlayLayer): number {
   switch (layer) {
-    case 'temperature': return clamp((p.temperature + 5) / 40, 0, 1);
+    // -10 °C → 0.0, 0 °C → 0.25, 15 °C → 0.63, 30 °C → 1.0
+    case 'temperature': return clamp((p.temperature + 10) / 40, 0, 1);
     case 'wind':        return clamp(p.windSpeed / 50, 0, 1);
     case 'rain':        return clamp(p.precipitation / 5, 0, 1);
     default:            return 0;

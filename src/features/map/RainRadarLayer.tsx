@@ -1,4 +1,5 @@
-import { Source, Layer } from 'react-map-gl/maplibre';
+import { useEffect } from 'react';
+import { Source, Layer, useMap } from 'react-map-gl/maplibre';
 import type { OverlayLayer } from '@/types/weather';
 import { useRadarFrames } from '@/hooks/useRadarFrames';
 
@@ -6,26 +7,38 @@ interface RainRadarLayerProps {
   activeLayer: OverlayLayer;
 }
 
+const SOURCE_ID = 'fc-radar-src';
+const LAYER_ID = 'fc-radar';
+
 export function RainRadarLayer({ activeLayer }: RainRadarLayerProps) {
   const active = activeLayer === 'rain';
   const { tileUrl } = useRadarFrames(active);
+  const { current: mapRef } = useMap();
+
+  // Update tiles in-place instead of remounting the Source every 600ms.
+  // Remounting causes MapLibre to discard cached tiles and re-request from scratch,
+  // producing a visible blink and (under rapid key changes) source-id conflicts.
+  useEffect(() => {
+    if (!tileUrl || !mapRef) return;
+    const map = mapRef.getMap();
+    const src = map.getSource(SOURCE_ID) as { setTiles?: (t: string[]) => void } | undefined;
+    src?.setTiles?.([tileUrl]);
+  }, [tileUrl, mapRef]);
 
   if (!active || !tileUrl) return null;
 
-  // Each frame gets a different tile URL. MapLibre raster sources don't support
-  // in-place tile updates, so we force React to remount the Source on every
-  // frame change by using the URL as the key. This is how radar animation works.
   return (
     <Source
-      key={tileUrl}
-      id="fc-radar-src"
+      id={SOURCE_ID}
       type="raster"
       tiles={[tileUrl]}
       tileSize={256}
+      minzoom={2}
+      maxzoom={12}
       attribution='<a href="https://www.rainviewer.com/api.html" target="_blank">RainViewer</a>'
     >
       <Layer
-        id="fc-radar"
+        id={LAYER_ID}
         type="raster"
         paint={{ 'raster-opacity': 0.75 }}
       />

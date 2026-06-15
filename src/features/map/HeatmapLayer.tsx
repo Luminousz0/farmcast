@@ -23,8 +23,6 @@ export function HeatmapLayer({ gridPoints, activeLayer }: HeatmapLayerProps) {
     [gridPoints],
   );
 
-  // Always render the source so it persists across layer-switcher toggling.
-  // Visibility is controlled via layout, not by returning null.
   return (
     <Source id="fc-heatmap-src" type="geojson" data={geoData}>
       <Layer
@@ -32,30 +30,34 @@ export function HeatmapLayer({ gridPoints, activeLayer }: HeatmapLayerProps) {
         type="heatmap"
         layout={{ visibility: visible ? 'visible' : 'none' }}
         paint={{
-          // Weight = normalised temperature score (0 cold → 1 hot)
           'heatmap-weight': ['get', 'score'],
-          // With 36 points (6×6 viewport grid), intensity 1.0 gives good density.
-          'heatmap-intensity': 1.0,
-          // Radius scales exponentially with zoom so neighbouring points always
-          // blend smoothly regardless of how far the user has zoomed in or out.
+          // 1.8 pushes the density value up so colour bands appear at realistic
+          // summer temperatures (~15–22 °C in NL) rather than only at extremes.
+          'heatmap-intensity': 1.8,
+          // The 6×6 viewport grid always places ~6 points across the screen.
+          // Spacing ≈ viewport_px / 5. We need radius ≥ half that to blend.
+          // On a typical 1280 px screen that's ~128 px — use 200+ for good overlap.
           'heatmap-radius': [
             'interpolate', ['exponential', 2], ['zoom'],
-            3, 40,
-            5, 60,
-            7, 100,
-            9, 200,
-            11, 500,
+            2,  150,
+            4,  200,
+            6,  260,
+            8,  350,
+            11, 600,
           ],
-          'heatmap-opacity': 0.70,
+          'heatmap-opacity': 0.72,
+          // Thresholds are tuned for the actual density values produced by
+          // the combination of heatmap-weight (0–1) × intensity (1.8):
+          // max density ≈ 1.0 at the hot end, ~0.05 at the transparent floor.
           'heatmap-color': [
             'interpolate', ['linear'], ['heatmap-density'],
             0,    'rgba(0,0,0,0)',
-            0.10, 'rgba(50,100,230,0.75)',  // deep blue  — cold
-            0.30, 'rgba(0,180,160,0.82)',   // teal       — cool
-            0.50, 'rgba(70,215,55,0.85)',   // green      — mild/optimal
-            0.70, 'rgba(245,175,0,0.86)',   // amber      — warm
-            0.88, 'rgba(235,70,20,0.88)',   // orange-red — hot
-            1.0,  'rgba(180,0,50,0.90)',    // deep red   — very hot
+            0.03, 'rgba(50,100,230,0.72)',   // deep blue  — cold
+            0.18, 'rgba(0,180,160,0.82)',    // teal       — cool
+            0.38, 'rgba(70,215,55,0.85)',    // green      — mild / optimal
+            0.60, 'rgba(245,175,0,0.86)',    // amber      — warm
+            0.80, 'rgba(235,70,20,0.88)',    // orange-red — hot
+            1.0,  'rgba(180,0,50,0.90)',     // deep red   — very hot
           ],
         }}
       />

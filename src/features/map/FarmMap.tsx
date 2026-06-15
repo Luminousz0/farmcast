@@ -80,7 +80,16 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
       essential: true,
       curve: 1.4,
     });
-    // flyTo fires moveend when it lands, which triggers the first grid fetch.
+
+    // Globe projection creates a dark atmospheric vignette after the intro —
+    // switch back to flat mercator once the fly-in lands.
+    map.once('moveend', () => {
+      try {
+        (map as unknown as { setProjection?: (p: unknown) => void }).setProjection?.(
+          { type: 'mercator' },
+        );
+      } catch { /* no-op */ }
+    });
   }, []);
 
   // Debounce: wait 700 ms after the map stops moving before fetching.
