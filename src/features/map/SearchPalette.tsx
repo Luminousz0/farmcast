@@ -153,11 +153,13 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
                 onClick={() => setOpen(false)}
               />
 
-              {/* Dialog */}
+              {/* Flex-centering wrapper — avoids Framer Motion's inline transform
+                  overwriting Tailwind's -translate-y-1/2 class */}
+              <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
               <motion.div
                 key="dialog"
                 {...DIALOG}
-                className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2"
+                className="w-[min(92vw,520px)] pointer-events-auto"
               >
                 <div className="glass overflow-hidden">
                   {/* Search input */}
@@ -243,6 +245,7 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
                   </div>
                 </div>
               </motion.div>
+              </div>
             </>
           )}
         </AnimatePresence>,

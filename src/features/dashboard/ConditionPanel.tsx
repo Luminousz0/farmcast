@@ -42,17 +42,22 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
   if (daily.length < 2) return null;
 
   const temps = daily.map((d) => d.tempMax);
-  const lo = Math.min(...temps);
-  const hi = Math.max(...temps);
-  const range = hi - lo || 1;
+  const dataLo = Math.min(...temps);
+  const dataHi = Math.max(...temps);
+  const dataRange = dataHi - dataLo || 1;
+  // Add 1°C padding above and below so the extreme days never sit flush
+  // against the chart edge — they stay clearly visible in the middle area.
+  const domainPad = Math.max(dataRange * 0.12, 1);
+  const lo = dataLo - domainPad;
+  const hi = dataHi + domainPad;
+  const range = hi - lo;
 
   const W = 100;
-  const H = 36;
+  const H = 50; // viewBox height — rendered at h-16 (64px) so 1 unit ≈ 1.28px
 
   const pts = temps.map((t, i) => ({
     x: (i / (temps.length - 1)) * W,
-    // 3px top+bottom breathing room so edge dots aren't flush with the viewBox
-    y: 3 + ((hi - t) / range) * (H - 6),
+    y: ((hi - t) / range) * H,
   }));
 
   const line = pts
@@ -77,7 +82,7 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
       </div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="h-9 w-full overflow-visible"
+        className="h-16 w-full"
         aria-hidden
       >
         <defs>
