@@ -17,9 +17,10 @@ interface MetricProps {
   value: number | undefined;
   unit: string;
   decimals?: number;
+  sub?: string;
 }
 
-function Metric({ label, value, unit, decimals = 0 }: MetricProps) {
+function Metric({ label, value, unit, decimals = 0, sub }: MetricProps) {
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5">
       <div className="text-[11px] font-medium uppercase tracking-wide text-white/40">
@@ -35,8 +36,17 @@ function Metric({ label, value, unit, decimals = 0 }: MetricProps) {
         </span>
         <span className="text-sm text-white/40">{unit}</span>
       </div>
+      {sub && (
+        <div className="mt-0.5 text-[11px] text-white/30">{sub}</div>
+      )}
     </div>
   );
+}
+
+// Dutch compass abbreviations (meteorological: direction wind comes FROM)
+function compassPoint(deg: number): string {
+  const dirs = ["N", "NO", "O", "ZO", "Z", "ZW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
 }
 
 function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
@@ -199,7 +209,12 @@ export function ConditionPanel({
 
             {/* Metric grid */}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Metric label="Wind" value={current.windSpeed} unit="km/u" />
+              <Metric
+                label="Wind"
+                value={current.windSpeed}
+                unit="km/u"
+                sub={`uit het ${compassPoint(current.windDirection)}`}
+              />
               <Metric
                 label="Neerslag"
                 value={current.precipitation}
@@ -217,6 +232,14 @@ export function ConditionPanel({
                 value={current.humidity}
                 unit="%"
               />
+              {current.soilMoisture !== undefined && (
+                <Metric
+                  label="Bodemvocht"
+                  value={current.soilMoisture * 100}
+                  unit="%"
+                  decimals={1}
+                />
+              )}
             </div>
 
             {/* 7-day trend sparkline */}
