@@ -48,11 +48,11 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
 
   const W = 100;
   const H = 36;
-  const PAD = 4;
 
   const pts = temps.map((t, i) => ({
-    x: PAD + (i / (temps.length - 1)) * (W - PAD * 2),
-    y: H - PAD - ((t - lo) / range) * (H - PAD * 2),
+    x: (i / (temps.length - 1)) * W,
+    // 3px top+bottom breathing room so edge dots aren't flush with the viewBox
+    y: 3 + ((hi - t) / range) * (H - 6),
   }));
 
   const line = pts

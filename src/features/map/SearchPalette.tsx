@@ -157,7 +157,7 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
               <motion.div
                 key="dialog"
                 {...DIALOG}
-                className="fixed left-1/2 top-[18%] z-50 w-[min(92vw,520px)] -translate-x-1/2"
+                className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2"
               >
                 <div className="glass overflow-hidden">
                   {/* Search input */}
