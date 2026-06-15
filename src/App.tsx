@@ -1,23 +1,38 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { FarmMap } from "@/features/map/FarmMap";
+import { SearchPalette } from "@/features/map/SearchPalette";
 import { ConditionPanel } from "@/features/dashboard/ConditionPanel";
 import { usePointForecast } from "@/hooks/usePointForecast";
-import type { LatLon } from "@/types/weather";
+import type { LatLon, NamedLocation } from "@/types/weather";
 
 export default function App() {
   const [selected, setSelected] = useState<LatLon | null>(null);
+  // Name comes from the search palette; null means the user clicked the map
+  const [selectedName, setSelectedName] = useState<string | null>(null);
   const { forecast, loading, error } = usePointForecast(selected);
 
-  const label = selected
-    ? `${selected.lat.toFixed(2)}, ${selected.lon.toFixed(2)}`
-    : "";
+  const handleMapSelect = (point: LatLon) => {
+    setSelected(point);
+    setSelectedName(null);
+  };
+
+  const handleSearchSelect = (loc: NamedLocation) => {
+    setSelected({ lat: loc.lat, lon: loc.lon });
+    setSelectedName(loc.name);
+  };
+
+  const label =
+    selectedName ??
+    (selected
+      ? `${selected.lat.toFixed(4)}°N, ${selected.lon.toFixed(4)}°O`
+      : "");
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <FarmMap selected={selected} onSelect={setSelected} />
+      <FarmMap selected={selected} onSelect={handleMapSelect} />
 
-      {/* Brand wordmark */}
+      {/* Top-left: brand wordmark */}
       <motion.header
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -31,7 +46,17 @@ export default function App() {
         </div>
       </motion.header>
 
-      {/* Hint when nothing is selected */}
+      {/* Top-right: search palette trigger */}
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.6 }}
+        className="pointer-events-none absolute right-5 top-5 z-10"
+      >
+        <SearchPalette onSelect={handleSearchSelect} />
+      </motion.div>
+
+      {/* Bottom hint when nothing is selected */}
       {!selected && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -40,7 +65,7 @@ export default function App() {
           className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center"
         >
           <div className="glass px-4 py-2 text-sm text-white/70">
-            Klik op de kaart om de condities van een veld te zien
+            Klik op de kaart of zoek een locatie om condities te bekijken
           </div>
         </motion.div>
       )}
@@ -53,7 +78,10 @@ export default function App() {
             loading={loading}
             error={error}
             label={label}
-            onClose={() => setSelected(null)}
+            onClose={() => {
+              setSelected(null);
+              setSelectedName(null);
+            }}
           />
         </div>
       )}

@@ -32,8 +32,20 @@ export interface CurrentConditions {
   time: string;
 }
 
+/** One day in the 7-day daily forecast. */
+export interface DailyForecast {
+  /** ISO date string (YYYY-MM-DD) */
+  date: string;
+  tempMax: number;
+  tempMin: number;
+  /** Total precipitation, mm */
+  precipitation: number;
+  weatherCode: number;
+}
+
 /** Everything the glass panel needs for one location. */
 export interface PointForecast {
   location: LatLon;
   current: CurrentConditions;
+  daily: DailyForecast[];
 }

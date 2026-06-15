@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import type { PointForecast } from "@/types/weather";
+import type { DailyForecast, PointForecast } from "@/types/weather";
 import { describeWeatherCode } from "@/lib/weatherCode";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 
@@ -7,7 +7,6 @@ interface ConditionPanelProps {
   forecast: PointForecast | null;
   loading: boolean;
   error: string | null;
-  /** Human label for the selected point (e.g. "52.13, 5.29"). */
   label: string;
   onClose: () => void;
 }
@@ -39,6 +38,81 @@ function Metric({ label, value, unit, decimals = 0 }: MetricProps) {
   );
 }
 
+function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
+  if (daily.length < 2) return null;
+
+  const temps = daily.map((d) => d.tempMax);
+  const lo = Math.min(...temps);
+  const hi = Math.max(...temps);
+  const range = hi - lo || 1;
+
+  const W = 100;
+  const H = 36;
+  const PAD = 4;
+
+  const pts = temps.map((t, i) => ({
+    x: PAD + (i / (temps.length - 1)) * (W - PAD * 2),
+    y: H - PAD - ((t - lo) / range) * (H - PAD * 2),
+  }));
+
+  const line = pts
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
+
+  const area =
+    line +
+    ` L ${pts[pts.length - 1].x.toFixed(1)} ${H} L ${pts[0].x.toFixed(1)} ${H} Z`;
+
+  const days = daily.map((d) =>
+    // append T12:00 to avoid UTC-midnight timezone drift in NL (UTC+2)
+    new Date(`${d.date}T12:00:00`).toLocaleDateString("nl-NL", {
+      weekday: "short",
+    }),
+  );
+
+  return (
+    <div className="mt-4 border-t border-white/[0.06] pt-3">
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+        7 dagen · max. temp.
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-9 w-full overflow-visible"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="fc-spark-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#fc-spark-grad)" />
+        <path
+          d={line}
+          fill="none"
+          stroke="#38bdf8"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {pts.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={1.8} fill="#38bdf8" />
+        ))}
+      </svg>
+      <div className="mt-1 flex justify-between text-[10px] text-white/30">
+        {days.map((d, i) => (
+          <span key={i}>{d}</span>
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-white/50">
+        {temps.map((t, i) => (
+          <span key={i}>{t.toFixed(0)}°</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ConditionPanel({
   forecast,
   loading,
@@ -59,36 +133,41 @@ export function ConditionPanel({
         transition={{ type: "spring", stiffness: 320, damping: 30 }}
         className="glass pointer-events-auto w-[min(92vw,360px)] p-4 text-white"
       >
+        {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="text-[11px] font-medium uppercase tracking-widest text-brand">
               Veldcondities
             </div>
-            <div className="mt-0.5 text-sm text-white/60">{label}</div>
+            <div className="mt-0.5 truncate text-sm text-white/60">{label}</div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg px-2 py-1 text-white/40 transition hover:bg-white/10 hover:text-white"
+            className="shrink-0 rounded-lg px-2 py-1 text-white/40 transition hover:bg-white/10 hover:text-white"
             aria-label="Sluiten"
           >
             ✕
           </button>
         </div>
 
+        {/* Loading */}
         {loading && (
           <div className="py-8 text-center text-sm text-white/50">
             Gegevens laden…
           </div>
         )}
 
-        {error && (
+        {/* Error */}
+        {error && !loading && (
           <div className="mt-3 rounded-xl border border-stop/30 bg-stop/10 px-3 py-2 text-sm text-stop">
             {error}
           </div>
         )}
 
+        {/* Main content */}
         {current && !loading && !error && (
           <>
+            {/* Big weather glyph + temperature */}
             <div className="mt-3 flex items-center gap-3">
               <span className="text-4xl">{weather?.glyph}</span>
               <div>
@@ -102,12 +181,9 @@ export function ConditionPanel({
               </div>
             </div>
 
+            {/* Metric grid */}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Metric
-                label="Wind"
-                value={current.windSpeed}
-                unit="km/u"
-              />
+              <Metric label="Wind" value={current.windSpeed} unit="km/u" />
               <Metric
                 label="Neerslag"
                 value={current.precipitation}
@@ -127,8 +203,15 @@ export function ConditionPanel({
               />
             </div>
 
+            {/* 7-day trend sparkline */}
+            {forecast.daily.length > 0 && (
+              <WeekSparkline daily={forecast.daily} />
+            )}
+
+            {/* Timestamp */}
             <div className="mt-3 text-[11px] text-white/30">
-              Bron: Open-Meteo · {new Date(current.time).toLocaleString("nl-NL")}
+              Bron: Open-Meteo ·{" "}
+              {new Date(current.time).toLocaleString("nl-NL")}
             </div>
           </>
         )}
