@@ -7,10 +7,9 @@ interface LayerSwitcherProps {
 }
 
 const LAYERS: { id: OverlayLayer; label: string; title: string }[] = [
-  { id: 'none',        label: 'Kaart',  title: 'Geen overlay' },
-  { id: 'temperature', label: 'Temp.',  title: 'Temperatuurkaart' },
-  { id: 'wind',        label: 'Wind',   title: 'Windstromen' },
-  { id: 'rain',        label: 'Radar',  title: 'Neerslageradar' },
+  { id: 'none',        label: 'Kaart', title: 'Geen overlay' },
+  { id: 'temperature', label: 'Temp.', title: 'Temperatuurkaart' },
+  { id: 'rain',        label: 'Radar', title: 'Neerslageradar' },
 ];
 
 export function LayerSwitcher({ activeLayer, onChange }: LayerSwitcherProps) {

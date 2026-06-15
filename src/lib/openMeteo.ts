@@ -100,11 +100,6 @@ interface GridOpenMeteoItem {
   };
 }
 
-function windComponents(speed: number, direction: number): { u: number; v: number } {
-  const rad = (direction * Math.PI) / 180;
-  return { u: -speed * Math.sin(rad), v: -speed * Math.cos(rad) };
-}
-
 /**
  * Fetch current conditions for a set of points in a single batch request.
  * Locations must be ordered consistently so callers can index into the result.
@@ -126,23 +121,15 @@ export async function getGridForecast(locations: LatLon[]): Promise<GridPoint[]>
   const raw = (await res.json()) as GridOpenMeteoItem | GridOpenMeteoItem[];
   const items = Array.isArray(raw) ? raw : [raw];
 
-  return items.map((item) => {
-    const { u, v } = windComponents(
-      item.current.wind_speed_10m,
-      item.current.wind_direction_10m,
-    );
-    return {
-      lat: item.latitude,
-      lon: item.longitude,
-      temperature: item.current.temperature_2m,
-      windSpeed: item.current.wind_speed_10m,
-      windDirection: item.current.wind_direction_10m,
-      windU: u,
-      windV: v,
-      precipitation: item.current.precipitation,
-      soilTemperature: item.current.soil_temperature_6cm,
-    };
-  });
+  return items.map((item) => ({
+    lat: item.latitude,
+    lon: item.longitude,
+    temperature: item.current.temperature_2m,
+    windSpeed: item.current.wind_speed_10m,
+    windDirection: item.current.wind_direction_10m,
+    precipitation: item.current.precipitation,
+    soilTemperature: item.current.soil_temperature_6cm,
+  }));
 }
 
 // ── Single-point forecast ────────────────────────────────────────────────────

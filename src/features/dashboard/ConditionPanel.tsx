@@ -17,10 +17,9 @@ interface MetricProps {
   value: number | undefined;
   unit: string;
   decimals?: number;
-  sub?: string;
 }
 
-function Metric({ label, value, unit, decimals = 0, sub }: MetricProps) {
+function Metric({ label, value, unit, decimals = 0 }: MetricProps) {
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5">
       <div className="text-[11px] font-medium uppercase tracking-wide text-white/40">
@@ -36,17 +35,105 @@ function Metric({ label, value, unit, decimals = 0, sub }: MetricProps) {
         </span>
         <span className="text-sm text-white/40">{unit}</span>
       </div>
-      {sub && (
-        <div className="mt-0.5 text-[11px] text-white/30">{sub}</div>
-      )}
     </div>
   );
 }
 
-// Dutch compass abbreviations (meteorological: direction wind comes FROM)
+// Dutch compass abbreviations — meteorological convention (where wind comes FROM)
 function compassPoint(deg: number): string {
   const dirs = ["N", "NO", "O", "ZO", "Z", "ZW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8];
+}
+
+function WindCompass({ speed, direction }: { speed: number; direction: number }) {
+  const label = compassPoint(direction);
+
+  // 12 tick marks around the ring, major every 3rd (cardinal/intercardinal)
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const major = i % 3 === 0;
+    const rad = ((i * 30) - 90) * (Math.PI / 180);
+    const r1 = 43, r2 = major ? 36 : 39;
+    return { x1: Math.cos(rad) * r1, y1: Math.sin(rad) * r1,
+             x2: Math.cos(rad) * r2, y2: Math.sin(rad) * r2, major };
+  });
+
+  return (
+    <div className="col-span-2 rounded-xl border border-white/5 bg-white/[0.03] py-3">
+      <div className="px-3 text-[11px] font-medium uppercase tracking-wide text-white/40">
+        Wind
+      </div>
+      <div className="flex justify-center pt-1">
+        <svg viewBox="-50 -50 100 100" width="150" height="150" aria-label={`Wind ${Math.round(speed)} km/u uit het ${label}`}>
+          {/* Outer ring */}
+          <circle cx="0" cy="0" r="44" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1.5" />
+
+          {/* Tick marks */}
+          {ticks.map((t, i) => (
+            <line
+              key={i}
+              x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+              stroke={t.major ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.09)"}
+              strokeWidth={t.major ? 1.2 : 0.8}
+            />
+          ))}
+
+          {/* Cardinal labels — Dutch: N O Z W */}
+          {(["N", "O", "Z", "W"] as const).map((lbl, i) => {
+            const rad = (i * 90 - 90) * (Math.PI / 180);
+            const isN = lbl === "N";
+            return (
+              <text
+                key={lbl}
+                x={Math.cos(rad) * 30}
+                y={Math.sin(rad) * 30}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill={isN ? "#38bdf8" : "rgba(255,255,255,0.32)"}
+                fontSize={isN ? "9" : "7.5"}
+                fontWeight={isN ? "700" : "400"}
+                fontFamily="Inter Tight, system-ui, sans-serif"
+              >
+                {lbl}
+              </text>
+            );
+          })}
+
+          {/* Direction needle — rotated to wind source direction */}
+          <g transform={`rotate(${direction})`}>
+            {/* Tail (rear half, dim) */}
+            <line x1="0" y1="20" x2="0" y2="5" stroke="rgba(255,255,255,0.15)" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Shaft (front half, brand cyan) */}
+            <line x1="0" y1="-20" x2="0" y2="5" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Arrowhead */}
+            <polygon points="0,-28 -4.5,-19 4.5,-19" fill="#38bdf8" />
+          </g>
+
+          {/* Center disc — speed display */}
+          <circle cx="0" cy="0" r="14" fill="rgba(7,11,20,0.85)" />
+          <circle cx="0" cy="0" r="14" fill="none" stroke="rgba(56,189,248,0.2)" strokeWidth="1" />
+          <text
+            x="0" y="-3.5"
+            textAnchor="middle" dominantBaseline="middle"
+            fill="white" fontSize="11" fontWeight="700"
+            fontFamily="Inter Tight, system-ui, sans-serif"
+          >
+            {Math.round(speed)}
+          </text>
+          <text
+            x="0" y="6"
+            textAnchor="middle" dominantBaseline="middle"
+            fill="rgba(255,255,255,0.38)" fontSize="4.5"
+            fontFamily="Inter Tight, system-ui, sans-serif"
+          >
+            km/u
+          </text>
+        </svg>
+      </div>
+      <div className="pb-1 text-center text-[11px] text-white/30">
+        uit het {label}
+      </div>
+    </div>
+  );
 }
 
 function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
@@ -56,15 +143,13 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
   const dataLo = Math.min(...temps);
   const dataHi = Math.max(...temps);
   const dataRange = dataHi - dataLo || 1;
-  // Add 1°C padding above and below so the extreme days never sit flush
-  // against the chart edge — they stay clearly visible in the middle area.
   const domainPad = Math.max(dataRange * 0.12, 1);
   const lo = dataLo - domainPad;
   const hi = dataHi + domainPad;
   const range = hi - lo;
 
   const W = 100;
-  const H = 50; // viewBox height — rendered at h-16 (64px) so 1 unit ≈ 1.28px
+  const H = 50;
 
   const pts = temps.map((t, i) => ({
     x: (i / (temps.length - 1)) * W,
@@ -80,7 +165,6 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
     ` L ${pts[pts.length - 1].x.toFixed(1)} ${H} L ${pts[0].x.toFixed(1)} ${H} Z`;
 
   const days = daily.map((d) =>
-    // append T12:00 to avoid UTC-midnight timezone drift in NL (UTC+2)
     new Date(`${d.date}T12:00:00`).toLocaleDateString("nl-NL", {
       weekday: "short",
     }),
@@ -140,7 +224,6 @@ export function ConditionPanel({
   const current = forecast?.current;
   const weather = current ? describeWeatherCode(current.weatherCode) : null;
 
-  // Esc closes the panel (matches the search palette's behaviour).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -176,32 +259,27 @@ export function ConditionPanel({
           </button>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="py-8 text-center text-sm text-white/50">
             Gegevens laden…
           </div>
         )}
 
-        {/* Error */}
         {error && !loading && (
           <div className="mt-3 rounded-xl border border-stop/30 bg-stop/10 px-3 py-2 text-sm text-stop">
             {error}
           </div>
         )}
 
-        {/* Main content */}
         {current && !loading && !error && (
           <>
-            {/* Big weather glyph + temperature */}
+            {/* Weather glyph + temperature */}
             <div className="mt-3 flex items-center gap-3">
               <span className="text-4xl">{weather?.glyph}</span>
               <div>
                 <div className="text-3xl font-bold">
                   <AnimatedNumber value={current.temperature} decimals={1} />
-                  <span className="ml-0.5 text-xl font-medium text-white/50">
-                    °C
-                  </span>
+                  <span className="ml-0.5 text-xl font-medium text-white/50">°C</span>
                 </div>
                 <div className="text-sm text-white/50">{weather?.label}</div>
               </div>
@@ -209,29 +287,12 @@ export function ConditionPanel({
 
             {/* Metric grid */}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Metric
-                label="Wind"
-                value={current.windSpeed}
-                unit="km/u"
-                sub={`uit het ${compassPoint(current.windDirection)}`}
-              />
-              <Metric
-                label="Neerslag"
-                value={current.precipitation}
-                unit="mm"
-                decimals={1}
-              />
-              <Metric
-                label="Bodemtemp."
-                value={current.soilTemperature}
-                unit="°C"
-                decimals={1}
-              />
-              <Metric
-                label="Vochtigheid"
-                value={current.humidity}
-                unit="%"
-              />
+              {/* Wind compass — full width */}
+              <WindCompass speed={current.windSpeed} direction={current.windDirection} />
+
+              <Metric label="Neerslag" value={current.precipitation} unit="mm" decimals={1} />
+              <Metric label="Bodemtemp." value={current.soilTemperature} unit="°C" decimals={1} />
+              <Metric label="Vochtigheid" value={current.humidity} unit="%" />
               {current.soilMoisture !== undefined && (
                 <Metric
                   label="Bodemvocht"
@@ -242,12 +303,10 @@ export function ConditionPanel({
               )}
             </div>
 
-            {/* 7-day trend sparkline */}
             {forecast.daily.length > 0 && (
               <WeekSparkline daily={forecast.daily} />
             )}
 
-            {/* Timestamp */}
             <div className="mt-3 text-[11px] text-white/30">
               Bron: Open-Meteo ·{" "}
               {new Date(current.time).toLocaleString("nl-NL")}

@@ -34,13 +34,13 @@ export function RainRadarLayer({ activeLayer }: RainRadarLayerProps) {
       tiles={[tileUrl]}
       tileSize={256}
       minzoom={2}
-      maxzoom={12}
+      maxzoom={8}
       attribution='<a href="https://www.rainviewer.com/api.html" target="_blank">RainViewer</a>'
     >
       <Layer
         id={LAYER_ID}
         type="raster"
-        paint={{ 'raster-opacity': 0.75 }}
+        paint={{ 'raster-opacity': 0.80 }}
       />
     </Source>
   );

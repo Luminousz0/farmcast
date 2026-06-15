@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import { Source, Layer } from 'react-map-gl/maplibre';
 import type { GridPoint, OverlayLayer } from '@/types/weather';
-import { temperatureScore } from '@/lib/gridSampler';
 
 interface HeatmapLayerProps {
   gridPoints: GridPoint[];
   activeLayer: OverlayLayer;
 }
 
+// MapLibre's heatmap layer type is a kernel-density estimator — overlapping
+// kernels compound, making every temp look "hot". Circle layer with direct
+// temperature → color expression is the right primitive here.
 export function HeatmapLayer({ gridPoints, activeLayer }: HeatmapLayerProps) {
   const visible = activeLayer === 'temperature';
 
@@ -17,47 +19,42 @@ export function HeatmapLayer({ gridPoints, activeLayer }: HeatmapLayerProps) {
       features: gridPoints.map((p) => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [p.lon, p.lat] as [number, number] },
-        properties: { score: temperatureScore(p), temperature: p.temperature },
+        properties: { temperature: p.temperature },
       })),
     }),
     [gridPoints],
   );
 
   return (
-    <Source id="fc-heatmap-src" type="geojson" data={geoData}>
+    <Source id="fc-temp-src" type="geojson" data={geoData}>
       <Layer
-        id="fc-heatmap"
-        type="heatmap"
+        id="fc-temp"
+        type="circle"
         layout={{ visibility: visible ? 'visible' : 'none' }}
         paint={{
-          'heatmap-weight': ['get', 'score'],
-          // 1.8 pushes the density value up so colour bands appear at realistic
-          // summer temperatures (~15–22 °C in NL) rather than only at extremes.
-          'heatmap-intensity': 1.8,
-          // The 6×6 viewport grid always places ~6 points across the screen.
-          // Spacing ≈ viewport_px / 5. We need radius ≥ half that to blend.
-          // On a typical 1280 px screen that's ~128 px — use 200+ for good overlap.
-          'heatmap-radius': [
+          // Radius grows with zoom so circles always overlap and blend smoothly.
+          // At NL zoom (~7), each circle covers roughly the same area as one
+          // grid cell — the blur (=1) fades the edge to transparent, giving a
+          // smooth interpolated look between the 36 grid points.
+          'circle-radius': [
             'interpolate', ['exponential', 2], ['zoom'],
-            2,  150,
-            4,  200,
-            6,  260,
-            8,  350,
-            11, 600,
+            3,  60,
+            5,  100,
+            7,  170,
+            9,  280,
+            11, 480,
           ],
-          'heatmap-opacity': 0.72,
-          // Thresholds are tuned for the actual density values produced by
-          // the combination of heatmap-weight (0–1) × intensity (1.8):
-          // max density ≈ 1.0 at the hot end, ~0.05 at the transparent floor.
-          'heatmap-color': [
-            'interpolate', ['linear'], ['heatmap-density'],
-            0,    'rgba(0,0,0,0)',
-            0.03, 'rgba(50,100,230,0.72)',   // deep blue  — cold
-            0.18, 'rgba(0,180,160,0.82)',    // teal       — cool
-            0.38, 'rgba(70,215,55,0.85)',    // green      — mild / optimal
-            0.60, 'rgba(245,175,0,0.86)',    // amber      — warm
-            0.80, 'rgba(235,70,20,0.88)',    // orange-red — hot
-            1.0,  'rgba(180,0,50,0.90)',     // deep red   — very hot
+          'circle-blur': 1,
+          'circle-opacity': 0.55,
+          // Direct temperature → color: no density math, always accurate.
+          'circle-color': [
+            'interpolate', ['linear'], ['get', 'temperature'],
+            -5,  '#3264e6',  // deep blue  — cold / frost risk
+             5,  '#00b4a0',  // teal       — cool
+            15,  '#46d737',  // green      — mild (typical NL working conditions)
+            22,  '#f5af00',  // amber      — warm
+            28,  '#eb4614',  // orange-red — hot
+            35,  '#b40032',  // deep red   — very hot
           ],
         }}
       />

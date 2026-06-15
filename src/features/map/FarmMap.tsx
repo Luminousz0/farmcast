@@ -10,7 +10,6 @@ import type { Bbox, GridPoint, LatLon, OverlayLayer } from "@/types/weather";
 import { DARK_MAP_STYLE, INTRO_VIEW, NL_VIEW } from "./mapStyle";
 import { HeatmapLayer } from "./HeatmapLayer";
 import { RainRadarLayer } from "./RainRadarLayer";
-import { WindParticles } from "./WindParticles";
 import { generateViewportGrid } from "@/lib/gridSampler";
 import { getGridForecast } from "@/lib/openMeteo";
 
@@ -23,26 +22,19 @@ interface FarmMapProps {
 export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
   const mapRef = useRef<MapRef | null>(null);
 
-  // Viewport-based grid: refetched after moveend, but only while a layer that
-  // actually consumes it (heatmap / wind particles) is active.
+  // Viewport-based grid: only fetched while the temperature overlay is active.
   const [gridPoints, setGridPoints] = useState<GridPoint[]>([]);
-  const [gridBbox, setGridBbox] = useState<Bbox>({
-    latMin: 50.75, latMax: 53.55, lonMin: 3.35, lonMax: 7.22,
-  });
   const [gridLoading, setGridLoading] = useState(false);
   const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchingRef = useRef(false);
 
-  // Only the temperature heatmap and wind particles read the sampled grid.
-  const needsGrid = activeLayer === "temperature" || activeLayer === "wind";
+  const needsGrid = activeLayer === "temperature";
 
   const fetchViewportGrid = useCallback(async () => {
     const map = mapRef.current?.getMap();
     if (!map || fetchingRef.current) return;
 
-    const zoom = map.getZoom();
-    // Too zoomed out — the bbox would span too many degrees for a useful 6×6 grid.
-    if (zoom < 3) return;
+    if (map.getZoom() < 3) return;
 
     const b = map.getBounds();
     if (!b) return;
@@ -59,17 +51,15 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
     try {
       const pts = await getGridForecast(generateViewportGrid(bbox));
       setGridPoints(pts);
-      setGridBbox(bbox);
     } catch {
-      // Keep existing data on API error; don't discard the last good grid.
+      // Keep existing data on error — don't blank the overlay.
     } finally {
       fetchingRef.current = false;
       setGridLoading(false);
     }
   }, []);
 
-  // Fetch immediately when switching into a layer that needs the grid, using
-  // the current viewport — so the overlay isn't blank until the next pan.
+  // Fetch immediately when switching to the temperature layer.
   useEffect(() => {
     if (needsGrid) fetchViewportGrid();
   }, [needsGrid, fetchViewportGrid]);
@@ -78,7 +68,6 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
     const map = mapRef.current?.getMap();
     if (!map) return;
 
-    // Globe projection (maplibre v5+) gives the cinematic curved-earth intro.
     map.setProjection({ type: "globe" });
 
     map.flyTo({
@@ -89,15 +78,12 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
       curve: 1.4,
     });
 
-    // The globe's atmospheric vignette is great for the fly-in but muddies the
-    // flat condition overlays — drop back to mercator once the camera lands.
+    // Globe vignette looks great for the fly-in, muddies flat overlays after.
     map.once("moveend", () => {
       map.setProjection({ type: "mercator" });
     });
   }, []);
 
-  // Debounce: wait 700 ms after the map stops moving before fetching. Only
-  // refetch while a grid-backed layer is active (saves free-tier API calls).
   const handleMoveEnd = useCallback(() => {
     if (!needsGrid) return;
     if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
@@ -126,7 +112,6 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
       >
         <AttributionControl compact position="bottom-left" />
 
-        {/* These must be inside <Map> so they have access to the map context. */}
         <HeatmapLayer gridPoints={gridPoints} activeLayer={activeLayer} />
         <RainRadarLayer activeLayer={activeLayer} />
 
@@ -145,16 +130,6 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
         )}
       </Map>
 
-      {/* Canvas overlay — outside <Map> but inside the wrapper, z-stacked on top. */}
-      {activeLayer === "wind" && (
-        <WindParticles
-          mapRef={mapRef}
-          gridPoints={gridPoints}
-          gridBbox={gridBbox}
-        />
-      )}
-
-      {/* Overlay data is loading for a grid-backed layer */}
       {needsGrid && gridLoading && (
         <div className="glass pointer-events-none absolute left-1/2 top-5 z-10 flex -translate-x-1/2 items-center gap-2 px-3 py-1.5 text-xs text-white/70">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />

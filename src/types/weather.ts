@@ -50,7 +50,7 @@ export interface PointForecast {
   daily: DailyForecast[];
 }
 
-export type OverlayLayer = 'temperature' | 'wind' | 'rain' | 'none';
+export type OverlayLayer = 'temperature' | 'rain' | 'none';
 
 /** Axis-aligned bounding box in lat/lon degrees. */
 export interface Bbox {
@@ -65,10 +65,6 @@ export interface GridPoint extends LatLon {
   temperature: number;
   windSpeed: number;
   windDirection: number;
-  /** Eastward wind component, km/h */
-  windU: number;
-  /** Northward wind component, km/h */
-  windV: number;
   precipitation: number;
   soilTemperature?: number;
 }

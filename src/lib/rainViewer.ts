@@ -28,7 +28,10 @@ export async function getRadarFrames(): Promise<{ host: string; frame: RadarFram
   return frames;
 }
 
-/** Build a MapLibre tile URL template for the given radar frame. */
+/** Build a MapLibre tile URL template for the given radar frame.
+ *  Color scheme 6 = NEXRAD Level-III, high contrast on dark maps.
+ *  smooth=1 snow=1 gives the smoothest look.
+ */
 export function radarTileUrl(host: string, path: string): string {
-  return `${host}${path}/256/{z}/{x}/{y}/4/1_1.png`;
+  return `${host}${path}/256/{z}/{x}/{y}/6/1_1.png`;
 }
