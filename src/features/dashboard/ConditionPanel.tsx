@@ -141,6 +141,15 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
   if (daily.length < 2) return null;
 
   const temps = daily.map((d) => d.tempMax);
+  const rains = daily.map((d) => d.precipitation);
+  const maxRain = Math.max(...rains, 0.1);
+
+  const W = 100;
+  const H_TEMP = 42;  // temperature line area
+  const H_GAP  = 4;   // separator between temp and rain
+  const H_RAIN = 12;  // rain bar area
+  const H_TOTAL = H_TEMP + H_GAP + H_RAIN;
+
   const dataLo = Math.min(...temps);
   const dataHi = Math.max(...temps);
   const dataRange = dataHi - dataLo || 1;
@@ -149,12 +158,9 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
   const hi = dataHi + domainPad;
   const range = hi - lo;
 
-  const W = 100;
-  const H = 50;
-
   const pts = temps.map((t, i) => ({
     x: (i / (temps.length - 1)) * W,
-    y: ((hi - t) / range) * H,
+    y: ((hi - t) / range) * H_TEMP,
   }));
 
   const line = pts
@@ -163,23 +169,23 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
 
   const area =
     line +
-    ` L ${pts[pts.length - 1].x.toFixed(1)} ${H} L ${pts[0].x.toFixed(1)} ${H} Z`;
+    ` L ${pts[pts.length - 1].x.toFixed(1)} ${H_TEMP} L ${pts[0].x.toFixed(1)} ${H_TEMP} Z`;
 
   const days = daily.map((d) =>
-    new Date(`${d.date}T12:00:00`).toLocaleDateString("nl-NL", {
-      weekday: "short",
-    }),
+    new Date(`${d.date}T12:00:00`).toLocaleDateString("nl-NL", { weekday: "short" }),
   );
+
+  const icons = daily.map((d) => describeWeatherCode(d.weatherCode).glyph);
 
   return (
     <div className="mt-4 border-t border-white/[0.06] pt-3">
       <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
-        7 dagen · max. temp.
+        7 dagen
       </div>
       <svg
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 0 ${W} ${H_TOTAL}`}
         preserveAspectRatio="none"
-        className="h-16 w-full"
+        className="h-20 w-full"
         aria-hidden
       >
         <defs>
@@ -188,6 +194,8 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
             <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
           </linearGradient>
         </defs>
+
+        {/* Temperature line + area */}
         <path d={area} fill="url(#fc-spark-grad)" />
         <path
           d={line}
@@ -200,12 +208,45 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
         {pts.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r={1.8} fill="#38bdf8" />
         ))}
+
+        {/* Subtle divider between temp and rain sections */}
+        <line
+          x1="0" y1={H_TEMP + H_GAP / 2}
+          x2={W} y2={H_TEMP + H_GAP / 2}
+          stroke="rgba(255,255,255,0.05)"
+          strokeWidth="0.5"
+        />
+
+        {/* Rain bars — only render for days with measurable precipitation */}
+        {rains.map((r, i) => {
+          if (r < 0.1) return null;
+          const x = (i / (rains.length - 1)) * W;
+          const barH = (r / maxRain) * H_RAIN;
+          return (
+            <rect
+              key={i}
+              x={x - 3}
+              y={H_TOTAL - barH}
+              width={6}
+              height={barH}
+              fill="rgba(56,189,248,0.5)"
+              rx={1}
+            />
+          );
+        })}
       </svg>
-      <div className="mt-1 flex justify-between text-[10px] text-white/30">
+
+      {/* Day label + weather icon per column */}
+      <div className="mt-1.5 flex justify-between">
         {days.map((d, i) => (
-          <span key={i}>{d}</span>
+          <div key={i} className="flex flex-col items-center gap-0.5">
+            <span className="text-[10px] text-white/30">{d}</span>
+            <span className="text-[13px] leading-none">{icons[i]}</span>
+          </div>
         ))}
       </div>
+
+      {/* Max temperature values */}
       <div className="mt-1 flex justify-between text-[10px] tabular-nums text-white/50">
         {temps.map((t, i) => (
           <span key={i}>{t.toFixed(0)}°</span>
