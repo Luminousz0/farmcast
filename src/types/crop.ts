@@ -30,6 +30,17 @@ export interface HarvestThresholds {
   maxWindSpeed: number;
 }
 
+export interface MowingThresholds {
+  /** Max precipitation mm/day — wet field risks compaction and poor wilting */
+  maxPrecipitation: number;
+  /** Max wind speed km/h */
+  maxWindSpeed: number;
+  /** Min temp °C — grass quality and drying poor below this */
+  minTemp: number;
+  /** Number of consecutive good days required for a mowing window */
+  dryDaysRequired: number;
+}
+
 /** Smith Period late-blight pressure configuration (potato-specific). */
 export interface LateBlightConfig {
   /** Min air temperature °C for a pressure hour (Smith Period: 10°C) */
@@ -47,7 +58,10 @@ export interface CropConfig {
   pesticideClass: PesticideClass;
   spray: SprayThresholds;
   frost: FrostThresholds;
-  harvest: HarvestThresholds;
+  /** Not present on dairy/grassland crops — use mowing instead */
+  harvest?: HarvestThresholds;
+  /** Present on dairy/grassland crops — drives mowing window */
+  mowing?: MowingThresholds;
   /** Present only on crops susceptible to late blight (Phytophthora infestans) */
   lateBlight?: LateBlightConfig;
 }

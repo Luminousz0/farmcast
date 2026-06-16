@@ -10,16 +10,30 @@ export interface CurrentAdvice {
   sprayLegalReason: string;
   frost: boolean;
   frostReason: string;
-  harvest: ConditionScore;
-  harvestReason: string;
+  /** Present for arable crops with harvest thresholds */
+  harvest?: ConditionScore;
+  harvestReason?: string;
+  /** Present for dairy/grassland crops with mowing thresholds */
+  mowing?: ConditionScore;
+  mowingReason?: string;
 }
 
 export interface DayWindowScore {
   spray: ConditionScore;
   /** True when daily max wind exceeds the legal limit */
   sprayLegallyBlocked: boolean;
-  harvest: ConditionScore;
+  /** Present for arable crops */
+  harvest?: ConditionScore;
+  /** Present for dairy/grassland crops */
+  mowing?: ConditionScore;
   frost: boolean;
+}
+
+export interface MowingWindowInfo {
+  /** 0-based index into daily[] where the first qualifying window starts, or null */
+  windowStart: number | null;
+  /** YYYY-MM-DD dates of each day in the window */
+  windowDates: string[];
 }
 
 // ── Hourly spray intelligence ────────────────────────────────────────────────
@@ -152,6 +166,34 @@ export function computeSoilIntelligence(
   };
 }
 
+// ── Mowing window ─────────────────────────────────────────────────────────────
+
+/**
+ * Find the first run of `dryDaysRequired` consecutive good mowing days in the
+ * 7-day daily forecast. A "good" day meets all mowing thresholds.
+ */
+export function computeMowingWindow(
+  daily: DailyForecast[],
+  crop: CropConfig,
+): MowingWindowInfo | null {
+  if (!crop.mowing) return null;
+  const { maxPrecipitation, maxWindSpeed, minTemp, dryDaysRequired } = crop.mowing;
+
+  const isGoodDay = (d: DailyForecast): boolean =>
+    d.precipitation <= maxPrecipitation &&
+    d.tempMax >= minTemp &&
+    (d.windSpeedMax === undefined || d.windSpeedMax <= maxWindSpeed);
+
+  for (let i = 0; i <= daily.length - dryDaysRequired; i++) {
+    const window = daily.slice(i, i + dryDaysRequired);
+    if (window.every(isGoodDay)) {
+      return { windowStart: i, windowDates: window.map((d) => d.date) };
+    }
+  }
+
+  return { windowStart: null, windowDates: [] };
+}
+
 /** Score current conditions for the advice strip (uses full current data incl. wind). */
 export function scoreCurrentConditions(
   current: CurrentConditions,
@@ -199,28 +241,56 @@ export function scoreCurrentConditions(
       : `Vorstrisico (${current.temperature.toFixed(1)}°C)`
     : 'Geen vorstrisico';
 
-  // --- Harvest ---
-  let harvest: ConditionScore = 'go';
-  let harvestReason = 'Goed oogstmoment';
+  // --- Harvest (arable crops only) ---
+  let harvest: ConditionScore | undefined;
+  let harvestReason: string | undefined;
 
-  if (current.windSpeed > crop.harvest.maxWindSpeed) {
-    harvest = 'stop';
-    harvestReason = `Wind te sterk voor machines`;
-  } else if (current.precipitation > crop.harvest.maxPrecipitation) {
-    harvest = 'stop';
-    harvestReason = `Veld te nat (${current.precipitation.toFixed(1)} mm)`;
-  } else if (current.temperature < crop.harvest.minTemp) {
-    harvest = 'caution';
-    harvestReason = `Koud — vochtgehalte hoog`;
-  } else if (current.temperature > crop.harvest.maxTemp) {
-    harvest = 'caution';
-    harvestReason = `Erg warm`;
-  } else if (current.precipitation > crop.harvest.maxPrecipitation * 0.4) {
-    harvest = 'caution';
-    harvestReason = `Enige neerslag (${current.precipitation.toFixed(1)} mm)`;
+  if (crop.harvest) {
+    harvest = 'go';
+    harvestReason = 'Goed oogstmoment';
+
+    if (current.windSpeed > crop.harvest.maxWindSpeed) {
+      harvest = 'stop';
+      harvestReason = `Wind te sterk voor machines`;
+    } else if (current.precipitation > crop.harvest.maxPrecipitation) {
+      harvest = 'stop';
+      harvestReason = `Veld te nat (${current.precipitation.toFixed(1)} mm)`;
+    } else if (current.temperature < crop.harvest.minTemp) {
+      harvest = 'caution';
+      harvestReason = `Koud — vochtgehalte hoog`;
+    } else if (current.temperature > crop.harvest.maxTemp) {
+      harvest = 'caution';
+      harvestReason = `Erg warm`;
+    } else if (current.precipitation > crop.harvest.maxPrecipitation * 0.4) {
+      harvest = 'caution';
+      harvestReason = `Enige neerslag (${current.precipitation.toFixed(1)} mm)`;
+    }
   }
 
-  return { spray, sprayReason, sprayLegallyBlocked, sprayLegalReason, frost, frostReason, harvest, harvestReason };
+  // --- Mowing (dairy/grassland crops only) ---
+  let mowing: ConditionScore | undefined;
+  let mowingReason: string | undefined;
+
+  if (crop.mowing) {
+    mowing = 'go';
+    mowingReason = 'Goed maaimoment';
+
+    if (current.precipitation > crop.mowing.maxPrecipitation) {
+      mowing = 'stop';
+      mowingReason = `Neerslag — veld te nat (${current.precipitation.toFixed(1)} mm)`;
+    } else if (current.windSpeed > crop.mowing.maxWindSpeed) {
+      mowing = 'stop';
+      mowingReason = `Wind te sterk (${Math.round(current.windSpeed)} km/u)`;
+    } else if (current.temperature < crop.mowing.minTemp) {
+      mowing = 'caution';
+      mowingReason = `Koud — drogen gaat traag (${current.temperature.toFixed(1)}°C)`;
+    } else if (current.precipitation > crop.mowing.maxPrecipitation * 0.4) {
+      mowing = 'caution';
+      mowingReason = `Enige neerslag — gras droogt langzamer`;
+    }
+  }
+
+  return { spray, sprayReason, sprayLegallyBlocked, sprayLegalReason, frost, frostReason, harvest, harvestReason, mowing, mowingReason };
 }
 
 /** Score a single daily forecast day for the 7-day best-window row. */
@@ -252,27 +322,51 @@ export function scoreDay(day: DailyForecast, crop: CropConfig): DayWindowScore {
     spray = 'caution';
   }
 
-  // --- Harvest ---
-  let harvest: ConditionScore = 'go';
+  // --- Harvest (arable crops only) ---
+  let harvest: ConditionScore | undefined;
 
-  if (day.precipitation > crop.harvest.maxPrecipitation) {
-    harvest = 'stop';
-  } else if (
-    day.windSpeedMax !== undefined &&
-    day.windSpeedMax > crop.harvest.maxWindSpeed
-  ) {
-    harvest = 'stop';
-  } else if (
-    day.tempMax < crop.harvest.minTemp ||
-    day.precipitation > crop.harvest.maxPrecipitation * 0.4
-  ) {
-    harvest = 'caution';
-  } else if (day.tempMax > crop.harvest.maxTemp) {
-    harvest = 'caution';
+  if (crop.harvest) {
+    harvest = 'go';
+
+    if (day.precipitation > crop.harvest.maxPrecipitation) {
+      harvest = 'stop';
+    } else if (
+      day.windSpeedMax !== undefined &&
+      day.windSpeedMax > crop.harvest.maxWindSpeed
+    ) {
+      harvest = 'stop';
+    } else if (
+      day.tempMax < crop.harvest.minTemp ||
+      day.precipitation > crop.harvest.maxPrecipitation * 0.4
+    ) {
+      harvest = 'caution';
+    } else if (day.tempMax > crop.harvest.maxTemp) {
+      harvest = 'caution';
+    }
+  }
+
+  // --- Mowing (dairy/grassland crops only) ---
+  let mowing: ConditionScore | undefined;
+
+  if (crop.mowing) {
+    mowing = 'go';
+
+    if (day.precipitation > crop.mowing.maxPrecipitation) {
+      mowing = 'stop';
+    } else if (
+      day.windSpeedMax !== undefined &&
+      day.windSpeedMax > crop.mowing.maxWindSpeed
+    ) {
+      mowing = 'stop';
+    } else if (day.tempMax < crop.mowing.minTemp) {
+      mowing = 'caution';
+    } else if (day.precipitation > crop.mowing.maxPrecipitation * 0.4) {
+      mowing = 'caution';
+    }
   }
 
   // --- Frost ---
   const frost = day.tempMin <= crop.frost.alertBelowTemp;
 
-  return { spray, sprayLegallyBlocked, harvest, frost };
+  return { spray, sprayLegallyBlocked, harvest, mowing, frost };
 }

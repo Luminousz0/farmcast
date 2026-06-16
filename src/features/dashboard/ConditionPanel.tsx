@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import type { ConditionScore, CropConfig } from "@/types/crop";
-import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence } from "@/lib/evaluate";
-import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoilIntelligence } from "@/lib/evaluate";
+import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence, MowingWindowInfo } from "@/lib/evaluate";
+import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoilIntelligence, computeMowingWindow } from "@/lib/evaluate";
 import { ALL_CROPS } from "@/data/crops";
 import { describeWeatherCode } from "@/lib/weatherCode";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
@@ -246,7 +246,11 @@ function AdviceStrip({ advice, crop }: AdviceStripProps) {
           legalReason={advice.sprayLegalReason}
         />
         <FrostCard hasFrost={advice.frost} reason={advice.frostReason} />
-        <AdviceCard title="Oogsten" score={advice.harvest} reason={advice.harvestReason} />
+        {advice.mowing !== undefined && advice.mowingReason !== undefined ? (
+          <AdviceCard title="Maaien" score={advice.mowing} reason={advice.mowingReason} />
+        ) : advice.harvest !== undefined && advice.harvestReason !== undefined ? (
+          <AdviceCard title="Oogsten" score={advice.harvest} reason={advice.harvestReason} />
+        ) : null}
       </div>
     </div>
   );
@@ -400,12 +404,16 @@ function SoilIntelCard({ intel }: { intel: SoilIntelligence }) {
 interface BestWindowRowProps {
   daily: DailyForecast[];
   scores: DayWindowScore[];
+  mowingWindow?: MowingWindowInfo | null;
 }
 
-function BestWindowRow({ daily, scores }: BestWindowRowProps) {
+function BestWindowRow({ daily, scores, mowingWindow }: BestWindowRowProps) {
   const days = daily.map((d) =>
     new Date(`${d.date}T12:00:00`).toLocaleDateString("nl-NL", { weekday: "short" }),
   );
+
+  const hasMowing = scores.some((s) => s.mowing !== undefined);
+  const hasHarvest = scores.some((s) => s.harvest !== undefined);
 
   return (
     <div className="mt-4 border-t border-white/[0.06] pt-3">
@@ -433,25 +441,72 @@ function BestWindowRow({ daily, scores }: BestWindowRowProps) {
         })}
       </div>
 
-      <div className="mt-3">
-        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
-          Oogstvenster — 7 dagen
+      {hasMowing && (
+        <div className="mt-3">
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+            Maaivenster — 7 dagen
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {scores.map((s, i) => {
+              const score = s.mowing ?? 'stop';
+              const color = SCORE_COLOR[score];
+              const inWindow =
+                mowingWindow?.windowStart !== null &&
+                mowingWindow?.windowStart !== undefined &&
+                i >= mowingWindow.windowStart &&
+                i < mowingWindow.windowStart + (mowingWindow.windowDates.length || 0);
+              return (
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div className="text-[10px] text-white/30">{days[i]}</div>
+                  <div
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: color,
+                      boxShadow: inWindow ? `0 0 8px 3px ${color}88` : `0 0 6px 1px ${color}66`,
+                      outline: inWindow ? `1px solid ${color}` : undefined,
+                      outlineOffset: inWindow ? '2px' : undefined,
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          {mowingWindow && (
+            <div className="mt-1.5 text-[10px] text-white/35">
+              {mowingWindow.windowStart !== null
+                ? `Beste venster: ${mowingWindow.windowDates
+                    .map((d) =>
+                      new Date(`${d}T12:00:00`).toLocaleDateString("nl-NL", { weekday: "short", day: "numeric" }),
+                    )
+                    .join(' – ')}`
+                : 'Geen droog maaivenster deze week'}
+            </div>
+          )}
         </div>
-        <div className="grid grid-cols-7 gap-1">
-          {scores.map((s, i) => {
-            const color = SCORE_COLOR[s.harvest];
-            return (
-              <div key={i} className="flex flex-col items-center gap-1.5">
-                <div className="text-[10px] text-white/30">{days[i]}</div>
-                <div
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: color, boxShadow: `0 0 6px 1px ${color}66` }}
-                />
-              </div>
-            );
-          })}
+      )}
+
+      {hasHarvest && (
+        <div className="mt-3">
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+            Oogstvenster — 7 dagen
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {scores.map((s, i) => {
+              const score = s.harvest ?? 'stop';
+              const color = SCORE_COLOR[score];
+              return (
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div className="text-[10px] text-white/30">{days[i]}</div>
+                  <div
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: color, boxShadow: `0 0 6px 1px ${color}66` }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -578,6 +633,7 @@ export function ConditionPanel({
     forecast?.daily.map((d) => scoreDay(d, selectedCrop)) ?? [];
   const sprayIntel = forecast?.hourly ? computeSprayIntelligence(forecast.hourly) : null;
   const soilIntel = forecast?.hourly ? computeSoilIntelligence(forecast.hourly, selectedCrop) : null;
+  const mowingWindow = forecast?.daily ? computeMowingWindow(forecast.daily, selectedCrop) : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -725,7 +781,11 @@ export function ConditionPanel({
 
             {/* The planning horizon: 7-day best window dots */}
             {forecast.daily.length > 0 && windowScores.length > 0 && (
-              <BestWindowRow daily={forecast.daily} scores={windowScores} />
+              <BestWindowRow
+                daily={forecast.daily}
+                scores={windowScores}
+                mowingWindow={mowingWindow}
+              />
             )}
 
             {/* Compact current weather line */}
