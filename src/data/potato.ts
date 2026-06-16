@@ -20,4 +20,9 @@ export const potato: CropConfig = {
     maxPrecipitation: 8,   // mm — wet soil damages skin, increases bruising
     maxWindSpeed: 40,      // km/h — harvester/elevator limit
   },
+  lateBlight: {
+    minTempC: 10,              // Smith Period: Phytophthora infestans active above 10°C
+    minRhPct: 90,              // Smith Period: RH ≥ 90% needed for spore germination
+    pressureHoursThreshold: 11, // Smith Period: ≥ 11 qualifying hours = pressure day
+  },
 };

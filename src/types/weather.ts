@@ -54,6 +54,10 @@ export interface HourlyForecast {
   dewPoint: number;
   precipitation: number;
   windSpeed: number;
+  /** Surface soil temperature (0 cm), °C — ground frost indicator */
+  soilTemperature0cm?: number;
+  /** Soil moisture 0–1 cm, m³/m³ — trafficability proxy */
+  soilMoisture0to1cm?: number;
 }
 
 /** Everything the glass panel needs for one location. */

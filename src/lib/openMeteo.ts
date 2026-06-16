@@ -37,6 +37,8 @@ const HOURLY_FIELDS = [
   "dew_point_2m",
   "precipitation",
   "wind_speed_10m",
+  "soil_temperature_0cm",
+  "soil_moisture_0_to_1cm",
 ] as const;
 
 interface OpenMeteoResponse {
@@ -66,6 +68,8 @@ interface OpenMeteoResponse {
     dew_point_2m: number[];
     precipitation: number[];
     wind_speed_10m: number[];
+    soil_temperature_0cm?: number[];
+    soil_moisture_0_to_1cm?: number[];
   };
 }
 
@@ -99,6 +103,8 @@ function mapHourly(
     dewPoint: raw.dew_point_2m[from + i] ?? 0,
     precipitation: raw.precipitation[from + i] ?? 0,
     windSpeed: raw.wind_speed_10m[from + i] ?? 0,
+    soilTemperature0cm: raw.soil_temperature_0cm?.[from + i],
+    soilMoisture0to1cm: raw.soil_moisture_0_to_1cm?.[from + i],
   }));
 }
 

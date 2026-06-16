@@ -30,6 +30,16 @@ export interface HarvestThresholds {
   maxWindSpeed: number;
 }
 
+/** Smith Period late-blight pressure configuration (potato-specific). */
+export interface LateBlightConfig {
+  /** Min air temperature °C for a pressure hour (Smith Period: 10°C) */
+  minTempC: number;
+  /** Min relative humidity % for a pressure hour (Smith Period: 90%) */
+  minRhPct: number;
+  /** Hours per 24h window that trigger a pressure day (Smith Period: 11h) */
+  pressureHoursThreshold: number;
+}
+
 export interface CropConfig {
   id: string;
   name: string;
@@ -38,4 +48,6 @@ export interface CropConfig {
   spray: SprayThresholds;
   frost: FrostThresholds;
   harvest: HarvestThresholds;
+  /** Present only on crops susceptible to late blight (Phytophthora infestans) */
+  lateBlight?: LateBlightConfig;
 }

@@ -166,9 +166,11 @@ Goal: spotlight the answer in the panel, then deepen the decisions farmers actua
 - [x] Add hourly fields to `openMeteo.ts` (temp, RH, dew point, precip, wind); `HourlyForecast[]` on `PointForecast`
 - [x] Delta-T spray-quality score (Stull wet-bulb), rain-free-window counter, inversion/dew risk flag in `evaluate.ts`; surfaced under the spray card
 
-**Session 10: Late blight (potato) + trafficability + ground frost**
-- [ ] Smith-period late-blight pressure index (potato only, via `crop.lateBlight` config)
-- [ ] Soil trafficability proxy + ground-frost (soil 0cm) — needs `soil_temperature_0cm`, `soil_moisture_0_to_1cm`
+**Session 10: Late blight (potato) + trafficability + ground frost** ✅ done (2026-06-16)
+- [x] `soil_temperature_0cm` + `soil_moisture_0_to_1cm` added to Open-Meteo hourly request + `HourlyForecast` type
+- [x] `LateBlightConfig` schema in `crop.ts`; `lateBlight` field wired on `potato.ts` (Smith Period: T ≥ 10°C, RH ≥ 90%, ≥ 11h = high pressure)
+- [x] `computeSoilIntelligence()` in `evaluate.ts` — ground frost (0cm ≤ 0°C), trafficability (moisture 0–1cm proxy), late-blight pressure hours
+- [x] `SoilIntelCard` in `ConditionPanel` — renders below SprayIntelCard; potato shows Phytophthora pressure dot + hours
 
 **Session 11: Dairy — grass + mowing window**
 - [ ] `Gras` crop config + `sector`/`activities` field so panel renders mowing instead of harvest/blight

@@ -77,6 +77,81 @@ export function computeSprayIntelligence(hourly: HourlyForecast[]): SprayIntelli
   return { deltaT, deltaTScore, rainFreeHours, dewRisk };
 }
 
+// ── Soil intelligence ────────────────────────────────────────────────────────
+
+export interface SoilIntelligence {
+  /** True when soil surface (0 cm) temperature ≤ 0°C */
+  groundFrost: boolean;
+  groundFrostTemp?: number;
+  /** Machinery trafficability based on soil moisture 0–1 cm */
+  trafficability: ConditionScore;
+  trafficabilityReason: string;
+  /** Late-blight pressure (potato only) — hours in next 24h meeting Smith Period conditions */
+  lateBlightPressureHours?: number;
+  lateBlightScore?: 'none' | 'low' | 'high';
+}
+
+/**
+ * Derive soil intelligence from next-24h hourly data.
+ * Uses first-hour soil readings for ground frost and trafficability.
+ * Scans all 24 hours for late-blight pressure (potato only).
+ */
+export function computeSoilIntelligence(
+  hourly: HourlyForecast[],
+  crop: CropConfig,
+): SoilIntelligence | null {
+  if (hourly.length === 0) return null;
+
+  // Ground frost: surface soil temp of first hour
+  const soilTemp0 = hourly[0].soilTemperature0cm;
+  const groundFrost = soilTemp0 !== undefined && soilTemp0 <= 0;
+
+  // Trafficability: soil moisture 0–1 cm of first hour
+  // Thresholds for NL agricultural soils (m³/m³):
+  // > 0.38 = saturated → machinery will compact / sink
+  // 0.30–0.38 = marginal
+  // < 0.30 = firm
+  const moisture = hourly[0].soilMoisture0to1cm;
+  let trafficability: ConditionScore = 'go';
+  let trafficabilityReason = 'Bodem berijdbaar';
+
+  if (moisture !== undefined) {
+    if (moisture > 0.38) {
+      trafficability = 'stop';
+      trafficabilityReason = `Bodem te nat (${(moisture * 100).toFixed(0)}% vol.)`;
+    } else if (moisture > 0.30) {
+      trafficability = 'caution';
+      trafficabilityReason = `Bodem nat (${(moisture * 100).toFixed(0)}% vol.)`;
+    } else {
+      trafficabilityReason = `Bodem stevig (${(moisture * 100).toFixed(0)}% vol.)`;
+    }
+  }
+
+  // Late-blight pressure (Smith Period) — potato only
+  let lateBlightPressureHours: number | undefined;
+  let lateBlightScore: 'none' | 'low' | 'high' | undefined;
+
+  if (crop.lateBlight) {
+    const { minTempC, minRhPct, pressureHoursThreshold } = crop.lateBlight;
+    const pressureHours = hourly.filter(
+      (h) => h.temperature >= minTempC && h.humidity >= minRhPct,
+    ).length;
+    lateBlightPressureHours = pressureHours;
+    if (pressureHours >= pressureHoursThreshold) lateBlightScore = 'high';
+    else if (pressureHours >= Math.floor(pressureHoursThreshold / 2)) lateBlightScore = 'low';
+    else lateBlightScore = 'none';
+  }
+
+  return {
+    groundFrost,
+    groundFrostTemp: soilTemp0,
+    trafficability,
+    trafficabilityReason,
+    lateBlightPressureHours,
+    lateBlightScore,
+  };
+}
+
 /** Score current conditions for the advice strip (uses full current data incl. wind). */
 export function scoreCurrentConditions(
   current: CurrentConditions,

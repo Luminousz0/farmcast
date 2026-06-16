@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import type { ConditionScore, CropConfig } from "@/types/crop";
-import type { CurrentAdvice, DayWindowScore, SprayIntelligence } from "@/lib/evaluate";
-import { scoreCurrentConditions, scoreDay, computeSprayIntelligence } from "@/lib/evaluate";
+import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence } from "@/lib/evaluate";
+import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoilIntelligence } from "@/lib/evaluate";
 import { ALL_CROPS } from "@/data/crops";
 import { describeWeatherCode } from "@/lib/weatherCode";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
@@ -315,6 +315,86 @@ function SprayIntelCard({ intel }: { intel: SprayIntelligence }) {
   );
 }
 
+// ── Soil intelligence card ───────────────────────────────────────────────────
+
+const BLIGHT_COLOR: Record<'none' | 'low' | 'high', string> = {
+  none:  '#34d399',
+  low:   '#fbbf24',
+  high:  '#f87171',
+};
+const BLIGHT_LABEL: Record<'none' | 'low' | 'high', string> = {
+  none:  'Laag',
+  low:   'Matig',
+  high:  'Hoog',
+};
+
+function SoilIntelCard({ intel }: { intel: SoilIntelligence }) {
+  const trafColor = SCORE_COLOR[intel.trafficability];
+  return (
+    <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5">
+      <div className="mb-2 text-[10px] font-medium uppercase tracking-wide text-white/35">
+        Bodem
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Trafficability */}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="h-2 w-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: trafColor, boxShadow: `0 0 6px 1px ${trafColor}66` }}
+          />
+          <span className="text-[11px] text-white/60">
+            Berijdbaarheid{' '}
+            <span className="font-semibold" style={{ color: trafColor }}>
+              {intel.trafficability === 'go' ? 'OK' : intel.trafficability === 'caution' ? 'Marginaal' : 'Geblokkeerd'}
+            </span>
+          </span>
+          <span className="text-[10px] text-white/30">{intel.trafficabilityReason.split(' (')[0]}</span>
+        </div>
+
+        {/* Ground frost */}
+        {intel.groundFrost && (
+          <>
+            <div className="h-3 w-px bg-white/10 hidden sm:block" />
+            <div className="flex items-center gap-1 text-[10px]" style={{ color: '#f87171' }}>
+              <span>🌡</span>
+              <span>
+                Grondvorst{intel.groundFrostTemp !== undefined ? ` ${intel.groundFrostTemp.toFixed(1)}°C` : ''}
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* Late blight pressure (potato only) */}
+        {intel.lateBlightScore !== undefined && (
+          <>
+            <div className="h-3 w-px bg-white/10 hidden sm:block" />
+            <div className="flex items-center gap-1.5">
+              <div
+                className="h-2 w-2 rounded-full flex-shrink-0"
+                style={{
+                  backgroundColor: BLIGHT_COLOR[intel.lateBlightScore],
+                  boxShadow: `0 0 6px 1px ${BLIGHT_COLOR[intel.lateBlightScore]}66`,
+                }}
+              />
+              <span className="text-[11px] text-white/60">
+                Phytophthora{' '}
+                <span className="font-semibold" style={{ color: BLIGHT_COLOR[intel.lateBlightScore] }}>
+                  {BLIGHT_LABEL[intel.lateBlightScore]}
+                </span>
+              </span>
+              {intel.lateBlightPressureHours !== undefined && (
+                <span className="text-[10px] text-white/30">
+                  {intel.lateBlightPressureHours}u druk
+                </span>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── 7-day window row ────────────────────────────────────────────────────────
 
 interface BestWindowRowProps {
@@ -497,6 +577,7 @@ export function ConditionPanel({
   const windowScores: DayWindowScore[] =
     forecast?.daily.map((d) => scoreDay(d, selectedCrop)) ?? [];
   const sprayIntel = forecast?.hourly ? computeSprayIntelligence(forecast.hourly) : null;
+  const soilIntel = forecast?.hourly ? computeSoilIntelligence(forecast.hourly, selectedCrop) : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -638,6 +719,9 @@ export function ConditionPanel({
 
             {/* Hourly spray intelligence — Delta-T, rain-free window, dew risk */}
             {sprayIntel && <SprayIntelCard intel={sprayIntel} />}
+
+            {/* Soil intelligence — trafficability, ground frost, late-blight pressure */}
+            {soilIntel && <SoilIntelCard intel={soilIntel} />}
 
             {/* The planning horizon: 7-day best window dots */}
             {forecast.daily.length > 0 && windowScores.length > 0 && (
