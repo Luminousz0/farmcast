@@ -13,8 +13,8 @@ export default defineConfig({
         name: "Farmcast",
         short_name: "Farmcast",
         description: "Weeradvies voor Nederlandse boeren — spuitvensters, vorstrisico, oogstcondities",
-        theme_color: "#070b14",
-        background_color: "#070b14",
+        theme_color: "#14110b",
+        background_color: "#14110b",
         display: "standalone",
         start_url: "/",
         icons: [

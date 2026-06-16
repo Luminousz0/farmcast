@@ -183,6 +183,16 @@ Goal: spotlight the answer in the panel, then deepen the decisions farmers actua
 - [x] `computeIrrigationAdvice()` in `evaluate.ts` — 7-day cumulative water deficit (ET0 − precip); thresholds > 20mm = irrigate, 10–20mm = caution, < 10mm = no need; `IrrigationCard` in panel for all arable crops (hidden for Gras)
 - [x] `SATELLITE_MAP_STYLE` in `mapStyle.ts` using ESRI World Imagery (free, no key); frosted-glass pill toggle button on FarmMap switching between dark and satellite view
 
+### Phase 6 — Design language
+
+**Session 13: Agronomic Editorial refresh** ✅ done (2026-06-16)
+- [x] New warm-dark "agronomic editorial" identity — dropped the generic electric-cyan accent
+- [x] Centralized color tokens: Tailwind tokens + CSS vars in `index.css` + new `src/lib/theme.ts` (single JS source for SVG/inline hexes; removed duplicated `SCORE_COLOR`/`STATUS_COLOR`)
+- [x] Palette: warm charcoal base (`#14110b`), wheat-gold chrome (`#d6a24a`), natural condition tones (field-green `#6aa84f` / harvest-ochre `#e2902b` / terracotta `#cf5a3e`)
+- [x] Typography: Fraunces (soft serif) for verdict + section headers + wordmark; Inter Tight retained for body/numerals
+- [x] Hierarchy: `HeroVerdict` block leads the panel (large Fraunces Go/Let op/Nee for the crop's primary activity — mowing for Gras, spraying otherwise); other advice demoted; all `uppercase tracking-wide` micro-labels removed
+- [x] Recolored marker, wind compass, sparkline, crop pills, map toggle, PWA `theme_color`
+
 ---
 
 ## Architecture Notes

@@ -24,7 +24,7 @@ export const DARK_MAP_STYLE: StyleSpecification = {
     {
       id: "background",
       type: "background",
-      paint: { "background-color": "#070b14" },
+      paint: { "background-color": "#14110b" },
     },
     {
       id: "carto-dark",

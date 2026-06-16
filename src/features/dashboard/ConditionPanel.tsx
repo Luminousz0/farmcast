@@ -7,6 +7,7 @@ import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoil
 import { ALL_CROPS } from "@/data/crops";
 import { describeWeatherCode } from "@/lib/weatherCode";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { BRAND_GOLD, CONDITION_COLORS } from "@/lib/theme";
 
 interface ConditionPanelProps {
   forecast: PointForecast | null;
@@ -19,6 +20,15 @@ interface ConditionPanelProps {
   onClose: () => void;
 }
 
+// Small caption above a section — Fraunces, normal case, warm-muted.
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="font-display text-[13px] font-medium text-white/55">
+      {children}
+    </div>
+  );
+}
+
 interface MetricProps {
   label: string;
   value: number | undefined;
@@ -29,9 +39,7 @@ interface MetricProps {
 function Metric({ label, value, unit, decimals = 0 }: MetricProps) {
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-white/40">
-        {label}
-      </div>
+      <div className="text-[11px] font-medium text-white/45">{label}</div>
       <div className="mt-1 flex items-baseline gap-1">
         <span className="text-2xl font-semibold text-white">
           {value === undefined ? (
@@ -64,9 +72,7 @@ function WindCompass({ speed, direction }: { speed: number; direction: number })
 
   return (
     <div className="col-span-2 rounded-xl border border-white/5 bg-white/[0.03] py-3">
-      <div className="px-3 text-[11px] font-medium uppercase tracking-wide text-white/40">
-        Wind
-      </div>
+      <div className="px-3 text-[11px] font-medium text-white/45">Wind</div>
       <div className="flex justify-center pt-1">
         <svg viewBox="-50 -50 100 100" width="150" height="150" aria-label={`Wind ${Math.round(speed)} km/u uit het ${label}`}>
           <circle cx="0" cy="0" r="44" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1.5" />
@@ -88,7 +94,7 @@ function WindCompass({ speed, direction }: { speed: number; direction: number })
                 y={Math.sin(rad) * 30}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill={isN ? "#38bdf8" : "rgba(255,255,255,0.32)"}
+                fill={isN ? BRAND_GOLD : "rgba(255,255,255,0.32)"}
                 fontSize={isN ? "9" : "7.5"}
                 fontWeight={isN ? "700" : "400"}
                 fontFamily="Inter Tight, system-ui, sans-serif"
@@ -98,12 +104,12 @@ function WindCompass({ speed, direction }: { speed: number; direction: number })
             );
           })}
           <g transform={`rotate(${direction})`}>
-            <circle cx="0" cy="-25" r="4.5" fill="#38bdf8" />
-            <line x1="0" y1="-20" x2="0" y2="17" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
-            <polygon points="0,27 -4.5,17 4.5,17" fill="#38bdf8" />
+            <circle cx="0" cy="-25" r="4.5" fill={BRAND_GOLD} />
+            <line x1="0" y1="-20" x2="0" y2="17" stroke={BRAND_GOLD} strokeWidth="2.5" strokeLinecap="round" />
+            <polygon points="0,27 -4.5,17 4.5,17" fill={BRAND_GOLD} />
           </g>
-          <circle cx="0" cy="0" r="14" fill="rgba(7,11,20,0.85)" />
-          <circle cx="0" cy="0" r="14" fill="none" stroke="rgba(56,189,248,0.2)" strokeWidth="1" />
+          <circle cx="0" cy="0" r="14" fill="rgba(20,17,11,0.85)" />
+          <circle cx="0" cy="0" r="14" fill="none" stroke="rgba(214,162,74,0.25)" strokeWidth="1" />
           <text x="0" y="-3.5" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="11" fontWeight="700" fontFamily="Inter Tight, system-ui, sans-serif">
             {Math.round(speed)}
           </text>
@@ -121,11 +127,7 @@ function WindCompass({ speed, direction }: { speed: number; direction: number })
 
 // ── Condition color helpers ─────────────────────────────────────────────────
 
-const SCORE_COLOR: Record<ConditionScore, string> = {
-  go:      '#34d399',
-  caution: '#fbbf24',
-  stop:    '#f87171',
-};
+const SCORE_COLOR = CONDITION_COLORS;
 
 const SCORE_LABEL: Record<ConditionScore, string> = {
   go:      'Go',
@@ -153,7 +155,7 @@ function CropPicker({ crops, selected, onChange }: CropPickerProps) {
             className="rounded-full px-3 py-1 text-[11px] font-medium transition"
             style={
               active
-                ? { background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.35)' }
+                ? { background: 'rgba(214,162,74,0.15)', color: BRAND_GOLD, border: '1px solid rgba(214,162,74,0.35)' }
                 : { background: 'transparent', color: 'rgba(255,255,255,0.38)', border: '1px solid rgba(255,255,255,0.10)' }
             }
           >
@@ -165,7 +167,54 @@ function CropPicker({ crops, selected, onChange }: CropPickerProps) {
   );
 }
 
-// ── Advice strip ────────────────────────────────────────────────────────────
+// ── Hero verdict ────────────────────────────────────────────────────────────
+// The answer, dominant. Primary activity = mowing for grass crops, else spraying.
+
+interface HeroVerdictProps {
+  title: string;
+  cropName: string;
+  score: ConditionScore;
+  reason: string;
+  legallyBlocked?: boolean;
+  legalReason?: string;
+}
+
+function HeroVerdict({ title, cropName, score, reason, legallyBlocked, legalReason }: HeroVerdictProps) {
+  const color = SCORE_COLOR[score];
+  return (
+    <div
+      className="mt-4 rounded-2xl border px-4 py-4"
+      style={{ background: `${color}14`, borderColor: `${color}38` }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[12px] text-white/55">
+          {title} · <span className="text-white/40">{cropName}</span>
+        </div>
+        {legallyBlocked && (
+          <div
+            className="rounded-md px-1.5 py-0.5 text-[9px] font-semibold leading-tight"
+            style={{ background: 'rgba(207,90,62,0.14)', color: '#cf5a3e', border: '1px solid rgba(207,90,62,0.3)' }}
+            title={legalReason}
+          >
+            ⚖ Wettelijk verboden
+          </div>
+        )}
+      </div>
+      <div className="mt-1.5 flex items-center gap-3">
+        <div
+          className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
+          style={{ backgroundColor: color, boxShadow: `0 0 16px 4px ${color}66` }}
+        />
+        <div className="font-display text-4xl font-semibold leading-none" style={{ color }}>
+          {SCORE_LABEL[score]}
+        </div>
+      </div>
+      <div className="mt-2 text-[13px] leading-snug text-white/55">{reason}</div>
+    </div>
+  );
+}
+
+// ── Secondary advice row ─────────────────────────────────────────────────────
 
 interface AdviceCardProps {
   title: string;
@@ -178,22 +227,20 @@ interface AdviceCardProps {
 function AdviceCard({ title, score, reason, legallyBlocked, legalReason }: AdviceCardProps) {
   const color = SCORE_COLOR[score];
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-3.5 text-center">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-white/40">
-        {title}
-      </div>
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-3 text-center">
+      <div className="text-[11px] font-medium text-white/45">{title}</div>
       <div
-        className="h-5 w-5 rounded-full"
-        style={{ backgroundColor: color, boxShadow: `0 0 12px 3px ${color}66` }}
+        className="h-4 w-4 rounded-full"
+        style={{ backgroundColor: color, boxShadow: `0 0 10px 2px ${color}55` }}
       />
-      <div className="text-sm font-semibold" style={{ color }}>
+      <div className="text-[13px] font-semibold" style={{ color }}>
         {SCORE_LABEL[score]}
       </div>
       <div className="text-[10px] leading-tight text-white/35">{reason}</div>
       {legallyBlocked && (
         <div
           className="mt-0.5 w-full rounded-md px-1.5 py-0.5 text-[9px] font-semibold leading-tight"
-          style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.25)' }}
+          style={{ background: 'rgba(207,90,62,0.12)', color: '#cf5a3e', border: '1px solid rgba(207,90,62,0.25)' }}
           title={legalReason}
         >
           ⚖ Wettelijk verboden
@@ -209,49 +256,46 @@ interface FrostCardProps {
 }
 
 function FrostCard({ hasFrost, reason }: FrostCardProps) {
-  const color = hasFrost ? '#f87171' : '#34d399';
+  const color = hasFrost ? CONDITION_COLORS.stop : CONDITION_COLORS.go;
   const label = hasFrost ? 'Risico' : 'Veilig';
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-3.5 text-center">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-white/40">
-        Vorst
-      </div>
-      <div className="h-5 w-5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 12px 3px ${color}66` }} />
-      <div className="text-sm font-semibold" style={{ color }}>{label}</div>
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-3 text-center">
+      <div className="text-[11px] font-medium text-white/45">Vorst</div>
+      <div className="h-4 w-4 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 10px 2px ${color}55` }} />
+      <div className="text-[13px] font-semibold" style={{ color }}>{label}</div>
       <div className="text-[10px] leading-tight text-white/35">{reason}</div>
     </div>
   );
 }
 
-interface AdviceStripProps {
+interface SecondaryAdviceProps {
   advice: CurrentAdvice;
-  crop: CropConfig;
 }
 
-function AdviceStrip({ advice, crop }: AdviceStripProps) {
+function SecondaryAdvice({ advice }: SecondaryAdviceProps) {
+  const isGrass = advice.mowing !== undefined && advice.mowingReason !== undefined;
+  // The hero already owns the primary activity; show what's left here.
+  const cards: React.ReactNode[] = [];
+  if (isGrass) {
+    cards.push(
+      <AdviceCard
+        key="spray"
+        title="Spuiten"
+        score={advice.spray}
+        reason={advice.sprayReason}
+        legallyBlocked={advice.sprayLegallyBlocked}
+        legalReason={advice.sprayLegalReason}
+      />,
+    );
+  }
+  cards.push(<FrostCard key="frost" hasFrost={advice.frost} reason={advice.frostReason} />);
+  if (!isGrass && advice.harvest !== undefined && advice.harvestReason !== undefined) {
+    cards.push(<AdviceCard key="harvest" title="Oogsten" score={advice.harvest} reason={advice.harvestReason} />);
+  }
+
   return (
-    <div className="mt-4">
-      <div className="mb-2 flex items-baseline justify-between">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-white/40">
-          Veldadvies nu
-        </div>
-        <div className="text-[10px] text-white/25">{crop.name}</div>
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <AdviceCard
-          title="Spuiten"
-          score={advice.spray}
-          reason={advice.sprayReason}
-          legallyBlocked={advice.sprayLegallyBlocked}
-          legalReason={advice.sprayLegalReason}
-        />
-        <FrostCard hasFrost={advice.frost} reason={advice.frostReason} />
-        {advice.mowing !== undefined && advice.mowingReason !== undefined ? (
-          <AdviceCard title="Maaien" score={advice.mowing} reason={advice.mowingReason} />
-        ) : advice.harvest !== undefined && advice.harvestReason !== undefined ? (
-          <AdviceCard title="Oogsten" score={advice.harvest} reason={advice.harvestReason} />
-        ) : null}
-      </div>
+    <div className={`mt-2 grid gap-2 ${cards.length >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      {cards}
     </div>
   );
 }
@@ -268,9 +312,7 @@ function SprayIntelCard({ intel }: { intel: SprayIntelligence }) {
   const dtColor = SCORE_COLOR[intel.deltaTScore];
   return (
     <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5">
-      <div className="mb-2 text-[10px] font-medium uppercase tracking-wide text-white/35">
-        Spuitkwaliteit
-      </div>
+      <div className="mb-2 text-[11px] font-medium text-white/40">Spuitkwaliteit</div>
       <div className="flex items-center gap-3 flex-wrap">
         {/* Delta-T */}
         <div className="flex items-center gap-1.5">
@@ -308,7 +350,7 @@ function SprayIntelCard({ intel }: { intel: SprayIntelligence }) {
         {intel.dewRisk && (
           <>
             <div className="h-3 w-px bg-white/10 hidden sm:block" />
-            <div className="flex items-center gap-1 text-[10px]" style={{ color: '#fbbf24' }}>
+            <div className="flex items-center gap-1 text-[10px]" style={{ color: CONDITION_COLORS.caution }}>
               <span>💧</span>
               <span>Dauwrisico</span>
             </div>
@@ -322,9 +364,9 @@ function SprayIntelCard({ intel }: { intel: SprayIntelligence }) {
 // ── Soil intelligence card ───────────────────────────────────────────────────
 
 const BLIGHT_COLOR: Record<'none' | 'low' | 'high', string> = {
-  none:  '#34d399',
-  low:   '#fbbf24',
-  high:  '#f87171',
+  none:  CONDITION_COLORS.go,
+  low:   CONDITION_COLORS.caution,
+  high:  CONDITION_COLORS.stop,
 };
 const BLIGHT_LABEL: Record<'none' | 'low' | 'high', string> = {
   none:  'Laag',
@@ -336,9 +378,7 @@ function SoilIntelCard({ intel }: { intel: SoilIntelligence }) {
   const trafColor = SCORE_COLOR[intel.trafficability];
   return (
     <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5">
-      <div className="mb-2 text-[10px] font-medium uppercase tracking-wide text-white/35">
-        Bodem
-      </div>
+      <div className="mb-2 text-[11px] font-medium text-white/40">Bodem</div>
       <div className="flex items-center gap-3 flex-wrap">
         {/* Trafficability */}
         <div className="flex items-center gap-1.5">
@@ -359,7 +399,7 @@ function SoilIntelCard({ intel }: { intel: SoilIntelligence }) {
         {intel.groundFrost && (
           <>
             <div className="h-3 w-px bg-white/10 hidden sm:block" />
-            <div className="flex items-center gap-1 text-[10px]" style={{ color: '#f87171' }}>
+            <div className="flex items-center gap-1 text-[10px]" style={{ color: CONDITION_COLORS.stop }}>
               <span>🌡</span>
               <span>
                 Grondvorst{intel.groundFrostTemp !== undefined ? ` ${intel.groundFrostTemp.toFixed(1)}°C` : ''}
@@ -432,9 +472,7 @@ function IrrigationCard({ advice }: { advice: IrrigationAdvice }) {
   const color = SCORE_COLOR[advice.score];
   return (
     <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5">
-      <div className="mb-2 text-[10px] font-medium uppercase tracking-wide text-white/35">
-        Beregening
-      </div>
+      <div className="mb-2 text-[11px] font-medium text-white/40">Beregening</div>
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5">
           <div
@@ -473,10 +511,8 @@ function BestWindowRow({ daily, scores, mowingWindow }: BestWindowRowProps) {
 
   return (
     <div className="mt-4 border-t border-white/[0.06] pt-3">
-      <div className="mb-2.5 text-[11px] font-medium uppercase tracking-wide text-white/40">
-        Spuitvenster — 7 dagen
-      </div>
-      <div className="grid grid-cols-7 gap-1">
+      <SectionLabel>Spuitvenster — 7 dagen</SectionLabel>
+      <div className="mt-2.5 grid grid-cols-7 gap-1">
         {scores.map((s, i) => {
           const color = SCORE_COLOR[s.spray];
           return (
@@ -490,7 +526,7 @@ function BestWindowRow({ daily, scores, mowingWindow }: BestWindowRowProps) {
                 <div className="text-[9px] leading-none" title="Vorstrisico">❄</div>
               )}
               {s.sprayLegallyBlocked && (
-                <div className="text-[8px] leading-none text-[#f87171]" title="Wettelijk verboden">⚖</div>
+                <div className="text-[8px] leading-none" style={{ color: CONDITION_COLORS.stop }} title="Wettelijk verboden">⚖</div>
               )}
             </div>
           );
@@ -499,10 +535,8 @@ function BestWindowRow({ daily, scores, mowingWindow }: BestWindowRowProps) {
 
       {hasMowing && (
         <div className="mt-3">
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
-            Maaivenster — 7 dagen
-          </div>
-          <div className="grid grid-cols-7 gap-1">
+          <SectionLabel>Maaivenster — 7 dagen</SectionLabel>
+          <div className="mt-2 grid grid-cols-7 gap-1">
             {scores.map((s, i) => {
               const score = s.mowing ?? 'stop';
               const color = SCORE_COLOR[score];
@@ -543,10 +577,8 @@ function BestWindowRow({ daily, scores, mowingWindow }: BestWindowRowProps) {
 
       {hasHarvest && (
         <div className="mt-3">
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
-            Oogstvenster — 7 dagen
-          </div>
-          <div className="grid grid-cols-7 gap-1">
+          <SectionLabel>Oogstvenster — 7 dagen</SectionLabel>
+          <div className="mt-2 grid grid-cols-7 gap-1">
             {scores.map((s, i) => {
               const score = s.harvest ?? 'stop';
               const color = SCORE_COLOR[score];
@@ -611,25 +643,23 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
 
   return (
     <div className="mt-4 border-t border-white/[0.06] pt-3">
-      <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
-        Temperatuur — 7 dagen
-      </div>
+      <SectionLabel>Temperatuur — 7 dagen</SectionLabel>
       <svg
         viewBox={`0 0 ${W} ${H_TOTAL}`}
         preserveAspectRatio="none"
-        className="h-20 w-full"
+        className="mt-2 h-20 w-full"
         aria-hidden
       >
         <defs>
           <linearGradient id="fc-spark-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+            <stop offset="0%" stopColor={BRAND_GOLD} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={BRAND_GOLD} stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={area} fill="url(#fc-spark-grad)" />
-        <path d={line} fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={line} fill="none" stroke={BRAND_GOLD} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         {pts.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={1.8} fill="#38bdf8" />
+          <circle key={i} cx={p.x} cy={p.y} r={1.8} fill={BRAND_GOLD} />
         ))}
         <line x1="0" y1={H_TEMP + H_GAP / 2} x2={W} y2={H_TEMP + H_GAP / 2} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
         {rains.map((r, i) => {
@@ -637,7 +667,7 @@ function WeekSparkline({ daily }: { daily: DailyForecast[] }) {
           const x = (i / (rains.length - 1)) * W;
           const barH = (r / maxRain) * H_RAIN;
           return (
-            <rect key={i} x={x - 3} y={H_TOTAL - barH} width={6} height={barH} fill="rgba(56,189,248,0.5)" rx={1} />
+            <rect key={i} x={x - 3} y={H_TOTAL - barH} width={6} height={barH} fill="rgba(214,162,74,0.5)" rx={1} />
           );
         })}
       </svg>
@@ -712,6 +742,10 @@ export function ConditionPanel({
     }
   }, [showSave, label]);
 
+  // The hero owns the crop's primary decision: mowing for grass, else spraying.
+  const heroIsMowing =
+    advice?.mowing !== undefined && advice?.mowingReason !== undefined;
+
   return (
     <AnimatePresence>
       <motion.div
@@ -730,7 +764,7 @@ export function ConditionPanel({
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-medium uppercase tracking-widest text-brand">
+            <div className="font-display text-[12px] font-medium text-brand">
               Veldcondities
             </div>
             <div className="mt-0.5 truncate text-sm text-white/60">{label}</div>
@@ -798,24 +832,16 @@ export function ConditionPanel({
 
         {loading && (
           <div className="mt-3 animate-pulse space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white/10" />
-              <div className="space-y-2">
-                <div className="h-7 w-24 rounded-lg bg-white/10" />
-                <div className="h-3.5 w-16 rounded bg-white/[0.06]" />
-              </div>
-            </div>
+            <div className="h-24 rounded-2xl bg-white/[0.06]" />
             <div className="grid grid-cols-2 gap-2">
-              <div className="col-span-2 h-40 rounded-xl bg-white/[0.05]" />
-              <div className="h-16 rounded-xl bg-white/[0.05]" />
-              <div className="h-16 rounded-xl bg-white/[0.05]" />
-              <div className="h-16 rounded-xl bg-white/[0.05]" />
-              <div className="h-16 rounded-xl bg-white/[0.05]" />
+              <div className="h-20 rounded-xl bg-white/[0.04]" />
+              <div className="h-20 rounded-xl bg-white/[0.04]" />
             </div>
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="h-20 rounded-xl bg-white/[0.04]" />
-              <div className="h-20 rounded-xl bg-white/[0.04]" />
-              <div className="h-20 rounded-xl bg-white/[0.04]" />
+            <div className="h-12 rounded-xl bg-white/[0.04]" />
+            <div className="grid grid-cols-7 gap-1 pt-1">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-8 rounded-lg bg-white/[0.04]" />
+              ))}
             </div>
           </div>
         )}
@@ -826,10 +852,20 @@ export function ConditionPanel({
           </div>
         )}
 
-        {current && !loading && !error && (
+        {current && !loading && !error && advice && (
           <>
-            {/* The answer first: farm advice strip */}
-            {advice && <AdviceStrip advice={advice} crop={selectedCrop} />}
+            {/* The answer, dominant: hero verdict for the primary activity */}
+            <HeroVerdict
+              title={heroIsMowing ? "Maaien" : "Spuiten"}
+              cropName={selectedCrop.name}
+              score={heroIsMowing ? advice.mowing! : advice.spray}
+              reason={heroIsMowing ? advice.mowingReason! : advice.sprayReason}
+              legallyBlocked={heroIsMowing ? undefined : advice.sprayLegallyBlocked}
+              legalReason={heroIsMowing ? undefined : advice.sprayLegalReason}
+            />
+
+            {/* Supporting decisions, de-emphasized */}
+            <SecondaryAdvice advice={advice} />
 
             {/* Hourly spray intelligence — Delta-T, rain-free window, dew risk */}
             {sprayIntel && <SprayIntelCard intel={sprayIntel} />}
@@ -865,7 +901,7 @@ export function ConditionPanel({
             <div className="mt-3">
               <button
                 onClick={() => setShowDetails((v) => !v)}
-                className="flex w-full items-center justify-between rounded-lg px-1 py-1 text-[11px] font-medium uppercase tracking-wide text-white/40 transition hover:text-white/70"
+                className="flex w-full items-center justify-between rounded-lg px-1 py-1 font-display text-[13px] font-medium text-white/50 transition hover:text-white/80"
               >
                 <span>Details</span>
                 <span className={`transition-transform ${showDetails ? "rotate-180" : ""}`}>▾</span>

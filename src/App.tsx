@@ -90,7 +90,7 @@ export default function App() {
         className="pointer-events-none absolute left-5 top-5 z-10"
       >
         <div className="glass pointer-events-auto px-4 py-2">
-          <span className="text-lg font-bold tracking-tight text-white">
+          <span className="font-display text-xl font-semibold tracking-tight text-white">
             Farm<span className="text-brand">cast</span>
           </span>
         </div>

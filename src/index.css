@@ -4,6 +4,16 @@
 
 :root {
   color-scheme: dark;
+
+  /* Agronomic-editorial theme tokens. Mirror tailwind.config.ts + src/lib/theme.ts. */
+  --fc-bg: #14110b; /* warm near-black */
+  --fc-surface: #1c1710; /* raised surface */
+  --fc-line: #272017; /* hairline / subtle fill */
+  --fc-text: #efe9dc; /* warm off-white */
+  --fc-gold: #d6a24a; /* wheat-gold chrome */
+  --fc-go: #6aa84f; /* field green */
+  --fc-caution: #e2902b; /* harvest ochre-orange */
+  --fc-stop: #cf5a3e; /* terracotta / brick */
 }
 
 html,
@@ -14,26 +24,26 @@ body,
 }
 
 body {
-  background-color: #070b14;
-  color: #e6edf7;
+  background-color: var(--fc-bg);
+  color: var(--fc-text);
   font-family: "Inter Tight", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
 
-/* Frosted glass surface used by floating panels */
+/* Frosted glass surface used by floating panels — warmed for the editorial theme */
 @layer components {
   .glass {
-    @apply rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-glass;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+    @apply rounded-2xl border border-[#efe9dc]/10 bg-[#efe9dc]/[0.05] backdrop-blur-glass;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.42);
   }
 }
 
-/* MapLibre attribution: keep it subtle on the dark theme */
+/* MapLibre attribution: keep it subtle on the warm-dark theme */
 .maplibregl-ctrl-attrib {
-  background: rgba(7, 11, 20, 0.6) !important;
-  color: #8aa0bd !important;
+  background: rgba(20, 17, 11, 0.6) !important;
+  color: #b8ac94 !important;
 }
 .maplibregl-ctrl-attrib a {
-  color: #aebfd8 !important;
+  color: #d2c6ac !important;
 }

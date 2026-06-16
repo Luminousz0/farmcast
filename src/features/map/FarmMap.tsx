@@ -47,7 +47,7 @@ export function FarmMap({ selected, onSelect }: FarmMapProps) {
               className="relative"
             >
               <span className="absolute inset-0 -m-3 animate-ping rounded-full bg-brand/30" />
-              <span className="block h-3.5 w-3.5 rounded-full border-2 border-white bg-brand shadow-[0_0_12px_2px_rgba(56,189,248,0.8)]" />
+              <span className="block h-3.5 w-3.5 rounded-full border-2 border-white bg-brand shadow-[0_0_12px_2px_rgba(214,162,74,0.85)]" />
             </motion.div>
           </Marker>
         )}

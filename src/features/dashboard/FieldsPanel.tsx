@@ -1,15 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { SavedField } from "@/types/field";
 import type { CropConfig } from "@/types/crop";
-import type { ConditionScore } from "@/types/crop";
 import { usePointForecast } from "@/hooks/usePointForecast";
 import { scoreCurrentConditions } from "@/lib/evaluate";
-
-const STATUS_COLOR: Record<ConditionScore, string> = {
-  go: "#34d399",
-  caution: "#fbbf24",
-  stop: "#f87171",
-};
+import { CONDITION_COLORS } from "@/lib/theme";
 
 function FieldRow({
   field,
@@ -27,7 +21,7 @@ function FieldRow({
     ? scoreCurrentConditions(forecast.current, crop)
     : null;
   const color = advice
-    ? STATUS_COLOR[advice.spray]
+    ? CONDITION_COLORS[advice.spray]
     : "rgba(255,255,255,0.15)";
 
   return (
@@ -81,7 +75,7 @@ export function FieldsPanel({
       transition={{ delay: 0.3, duration: 0.5 }}
       className="glass pointer-events-auto absolute left-5 top-20 z-10 w-44 p-2"
     >
-      <div className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-wide text-white/30">
+      <div className="mb-1.5 px-1 font-display text-[12px] font-medium text-white/45">
         Mijn percelen
       </div>
       <AnimatePresence initial={false}>
