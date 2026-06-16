@@ -50,8 +50,6 @@ export interface PointForecast {
   daily: DailyForecast[];
 }
 
-export type OverlayLayer = 'temperature' | 'rain' | 'none';
-
 /** Axis-aligned bounding box in lat/lon degrees. */
 export interface Bbox {
   latMin: number;
@@ -69,8 +67,3 @@ export interface GridPoint extends LatLon {
   soilTemperature?: number;
 }
 
-/** One radar frame from the RainViewer API. */
-export interface RadarFrame {
-  time: number;
-  path: string;
-}

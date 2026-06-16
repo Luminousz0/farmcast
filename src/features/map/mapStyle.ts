@@ -35,16 +35,9 @@ export const DARK_MAP_STYLE: StyleSpecification = {
   ],
 };
 
-// Roughly the Netherlands, centred. Used for the intro fly-to target.
+// Netherlands centred, comfortable zoom for field-level browsing.
 export const NL_VIEW = {
   longitude: 5.29,
   latitude: 52.13,
   zoom: 6.9,
-} as const;
-
-// A wide, high-altitude starting frame the camera flies in *from* on load.
-export const INTRO_VIEW = {
-  longitude: 5.29,
-  latitude: 52.13,
-  zoom: 2.4,
 } as const;
