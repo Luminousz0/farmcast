@@ -1,0 +1,200 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [105.7, 10.4] },
+      "properties": { "crop_id": "rice", "region": "Mekong Delta, Vietnam", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [105.8, 20.9] },
+      "properties": { "crop_id": "rice", "region": "Red River Delta, Vietnam", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [90.1, 23.7] },
+      "properties": { "crop_id": "rice", "region": "Ganges Delta, Bangladesh", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [74.9, 30.8] },
+      "properties": { "crop_id": "rice", "region": "Punjab, India", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [117.5, 31.0] },
+      "properties": { "crop_id": "rice", "region": "Yangtze vlakte, China", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [112.0, 28.0] },
+      "properties": { "crop_id": "rice", "region": "Hunan, China", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [95.5, 16.8] },
+      "properties": { "crop_id": "rice", "region": "Irrawaddy Delta, Myanmar", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [100.1, 15.5] },
+      "properties": { "crop_id": "rice", "region": "Centraal vlak, Thailand", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [110.4, -7.2] },
+      "properties": { "crop_id": "rice", "region": "Java, Indonesië", "emoji": "🌾" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-55.5, -12.5] },
+      "properties": { "crop_id": "soy", "region": "Mato Grosso, Brazilië", "emoji": "🫘" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-51.5, -23.5] },
+      "properties": { "crop_id": "soy", "region": "Paraná, Brazilië", "emoji": "🫘" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-93.6, 41.9] },
+      "properties": { "crop_id": "soy", "region": "Iowa, VS", "emoji": "🫘" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-89.5, 40.6] },
+      "properties": { "crop_id": "soy", "region": "Illinois, VS", "emoji": "🫘" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-59.5, -35.0] },
+      "properties": { "crop_id": "soy", "region": "Buenos Aires, Argentinië", "emoji": "🫘" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [127.0, 48.0] },
+      "properties": { "crop_id": "soy", "region": "Heilongjiang, China", "emoji": "🫘" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-55.8, -27.0] },
+      "properties": { "crop_id": "soy", "region": "Itapúa, Paraguay", "emoji": "🫘" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [5.5, 5.5] },
+      "properties": { "crop_id": "cassava", "region": "Delta State, Nigeria", "emoji": "🌿" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [3.5, 7.0] },
+      "properties": { "crop_id": "cassava", "region": "Ogun, Nigeria", "emoji": "🌿" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [22.5, -6.0] },
+      "properties": { "crop_id": "cassava", "region": "Kasaï, DR Congo", "emoji": "🌿" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [36.0, -16.0] },
+      "properties": { "crop_id": "cassava", "region": "Zambézia, Mozambique", "emoji": "🌿" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-1.8, 7.5] },
+      "properties": { "crop_id": "cassava", "region": "Brong-Ahafo, Ghana", "emoji": "🌿" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-42.0, -12.5] },
+      "properties": { "crop_id": "cassava", "region": "Bahia, Brazilië", "emoji": "🌿" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [102.8, 16.5] },
+      "properties": { "crop_id": "cassava", "region": "Khon Kaen, Thailand", "emoji": "🌿" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-7.5, 4.8] },
+      "properties": { "crop_id": "cacao", "region": "San Pédro, Ivoorkust", "emoji": "🍫" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-6.4, 5.8] },
+      "properties": { "crop_id": "cacao", "region": "Soubré, Ivoorkust", "emoji": "🍫" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-1.6, 6.7] },
+      "properties": { "crop_id": "cacao", "region": "Ashanti, Ghana", "emoji": "🍫" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-79.5, -1.0] },
+      "properties": { "crop_id": "cacao", "region": "Los Ríos, Ecuador", "emoji": "🍫" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [121.5, -3.0] },
+      "properties": { "crop_id": "cacao", "region": "Sulawesi, Indonesië", "emoji": "🍫" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [11.5, 4.5] },
+      "properties": { "crop_id": "cacao", "region": "Centre, Kameroen", "emoji": "🍫" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-76.0, -9.5] },
+      "properties": { "crop_id": "cacao", "region": "Huánuco, Peru", "emoji": "🍫" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [38.5, 6.5] },
+      "properties": { "crop_id": "coffee", "region": "Kaffa / Oromia, Ethiopië", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [38.6, 7.0] },
+      "properties": { "crop_id": "coffee", "region": "Sidama, Ethiopië", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-75.5, 2.0] },
+      "properties": { "crop_id": "coffee", "region": "Huila, Colombia", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-75.8, 6.5] },
+      "properties": { "crop_id": "coffee", "region": "Antioquia, Colombia", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-44.5, -19.5] },
+      "properties": { "crop_id": "coffee", "region": "Minas Gerais, Brazilië", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [108.4, 11.9] },
+      "properties": { "crop_id": "coffee", "region": "Da Lat, Vietnam", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [96.5, 4.5] },
+      "properties": { "crop_id": "coffee", "region": "Aceh, Indonesië", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-92.5, 16.5] },
+      "properties": { "crop_id": "coffee", "region": "Chiapas, Mexico", "emoji": "☕" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [34.2, 1.2] },
+      "properties": { "crop_id": "coffee", "region": "Mbale, Oeganda", "emoji": "☕" }
+    }
+  ]
+}

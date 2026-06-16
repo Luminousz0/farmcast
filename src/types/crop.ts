@@ -86,6 +86,8 @@ export interface CropConfig {
   name: string;
   /** ctgb.nl drift class — used to look up the legal spray wind limit */
   pesticideClass: PesticideClass;
+  /** 'global' = non-NL crop; skips ctgb.nl legal spray limit display */
+  region?: 'global';
   spray: SprayThresholds;
   frost: FrostThresholds;
   /** Not present on dairy/grassland crops — use mowing instead */

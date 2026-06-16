@@ -7,22 +7,41 @@ import Map, {
 } from "react-map-gl/maplibre";
 import { motion } from "framer-motion";
 import type { LatLon } from "@/types/weather";
-import { DARK_MAP_STYLE, SATELLITE_MAP_STYLE, NL_VIEW } from "./mapStyle";
+import { DARK_MAP_STYLE, SATELLITE_MAP_STYLE, WORLD_VIEW } from "./mapStyle";
+import { CropRegionsLayer, CROP_CIRCLE_LAYER_ID } from "./CropRegionsLayer";
+
+export interface CropRegionSelectData {
+  lat: number;
+  lon: number;
+  cropId: string;
+  regionName: string;
+}
 
 interface FarmMapProps {
   selected: LatLon | null;
   onSelect: (point: LatLon) => void;
+  onCropRegionSelect?: (data: CropRegionSelectData) => void;
 }
 
-export function FarmMap({ selected, onSelect }: FarmMapProps) {
+export function FarmMap({ selected, onSelect, onCropRegionSelect }: FarmMapProps) {
   const mapRef = useRef<MapRef | null>(null);
   const [styleMode, setStyleMode] = useState<'dark' | 'satellite'>('dark');
 
   const handleClick = useCallback(
     (e: MapLayerMouseEvent) => {
-      onSelect({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+      if (e.features && e.features.length > 0) {
+        const f = e.features[0];
+        const geom = f.geometry as GeoJSON.Point;
+        const [lon, lat] = geom.coordinates;
+        const cropId = f.properties?.crop_id as string;
+        const regionName = f.properties?.region as string;
+        mapRef.current?.flyTo({ center: [lon, lat], zoom: 7, duration: 1400, essential: true });
+        onCropRegionSelect?.({ lat, lon, cropId, regionName });
+      } else {
+        onSelect({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+      }
     },
-    [onSelect],
+    [onSelect, onCropRegionSelect],
   );
 
   return (
@@ -30,13 +49,16 @@ export function FarmMap({ selected, onSelect }: FarmMapProps) {
       <Map
         ref={mapRef}
         mapStyle={styleMode === 'satellite' ? SATELLITE_MAP_STYLE : DARK_MAP_STYLE}
-        initialViewState={NL_VIEW}
+        initialViewState={WORLD_VIEW}
         onClick={handleClick}
+        interactiveLayerIds={[CROP_CIRCLE_LAYER_ID]}
         attributionControl={false}
         cursor="crosshair"
         style={{ width: "100%", height: "100%" }}
       >
         <AttributionControl compact position="bottom-left" />
+
+        <CropRegionsLayer />
 
         {selected && (
           <Marker longitude={selected.lon} latitude={selected.lat} anchor="center">

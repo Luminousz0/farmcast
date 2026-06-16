@@ -7,7 +7,8 @@ export interface CurrentAdvice {
   sprayReason: string;
   /** True when current wind exceeds the ctgb.nl legal limit for this crop's pesticide class */
   sprayLegallyBlocked: boolean;
-  sprayLegalReason: string;
+  /** Undefined for global (non-NL) crops where ctgb.nl limits don't apply */
+  sprayLegalReason?: string;
   frost: boolean;
   frostReason: string;
   /** Present for arable crops with harvest thresholds */
@@ -328,13 +329,16 @@ export function scoreCurrentConditions(
   current: CurrentConditions,
   crop: CropConfig,
 ): CurrentAdvice {
-  const legalMaxWind = CTGB_LEGAL_WIND_KMH[crop.pesticideClass];
+  const isGlobal = crop.region === 'global';
+  const legalMaxWind = isGlobal ? Infinity : CTGB_LEGAL_WIND_KMH[crop.pesticideClass];
 
-  // --- Legal spray check ---
-  const sprayLegallyBlocked = current.windSpeed > legalMaxWind;
-  const sprayLegalReason = sprayLegallyBlocked
-    ? `Wettelijk verboden — wind ${Math.round(current.windSpeed)} km/u (max ${legalMaxWind} km/u klasse ${crop.pesticideClass})`
-    : `Klasse ${crop.pesticideClass} — max ${legalMaxWind} km/u`;
+  // --- Legal spray check (NL only) ---
+  const sprayLegallyBlocked = isGlobal ? false : current.windSpeed > legalMaxWind;
+  const sprayLegalReason = isGlobal
+    ? undefined
+    : sprayLegallyBlocked
+      ? `Wettelijk verboden — wind ${Math.round(current.windSpeed)} km/u (max ${legalMaxWind} km/u klasse ${crop.pesticideClass})`
+      : `Klasse ${crop.pesticideClass} — max ${legalMaxWind} km/u`;
 
   // --- Spray (agronomic) ---
   let spray: ConditionScore = 'go';
@@ -424,8 +428,9 @@ export function scoreCurrentConditions(
 
 /** Score a single daily forecast day for the 7-day best-window row. */
 export function scoreDay(day: DailyForecast, crop: CropConfig): DayWindowScore {
-  const legalMaxWind = CTGB_LEGAL_WIND_KMH[crop.pesticideClass];
-  const sprayLegallyBlocked = day.windSpeedMax !== undefined && day.windSpeedMax > legalMaxWind;
+  const isGlobal = crop.region === 'global';
+  const legalMaxWind = isGlobal ? Infinity : CTGB_LEGAL_WIND_KMH[crop.pesticideClass];
+  const sprayLegallyBlocked = isGlobal ? false : (day.windSpeedMax !== undefined && day.windSpeedMax > legalMaxWind);
 
   // --- Spray ---
   let spray: ConditionScore = 'go';

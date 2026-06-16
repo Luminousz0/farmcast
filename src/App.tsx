@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FarmMap } from "@/features/map/FarmMap";
+import { FarmMap, type CropRegionSelectData } from "@/features/map/FarmMap";
 import { SearchPalette } from "@/features/map/SearchPalette";
 import { ConditionPanel } from "@/features/dashboard/ConditionPanel";
 import { FieldsPanel } from "@/features/dashboard/FieldsPanel";
@@ -62,6 +62,15 @@ export default function App() {
     writeDeeplink(point);
   };
 
+  const handleCropRegionSelect = (data: CropRegionSelectData) => {
+    const point = { lat: data.lat, lon: data.lon };
+    setSelected(point);
+    setSelectedName(data.regionName);
+    const crop = ALL_CROPS.find(c => c.id === data.cropId);
+    if (crop) setSelectedCrop(crop);
+    writeDeeplink(point);
+  };
+
   const handleClose = () => {
     setSelected(null);
     setSelectedName(null);
@@ -81,7 +90,7 @@ export default function App() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <FarmMap selected={selected} onSelect={handleMapSelect} />
+      <FarmMap selected={selected} onSelect={handleMapSelect} onCropRegionSelect={handleCropRegionSelect} />
 
       {/* Top-left: brand wordmark */}
       <motion.header

@@ -63,3 +63,10 @@ export const NL_VIEW = {
   latitude: 52.13,
   zoom: 6.9,
 } as const;
+
+// World view showing all global crop regions.
+export const WORLD_VIEW = {
+  longitude: 20,
+  latitude: 15,
+  zoom: 2.2,
+} as const;
