@@ -155,6 +155,25 @@ Country-wide heatmaps and wind particles are beautiful but not the core product.
 - [ ] Animated wind particle layer; RainViewer rain radar overlay; layer switcher
 - [ ] deck.gl upgrade for smoother interpolation if needed
 
+### Phase 5 — Decision depth
+Goal: spotlight the answer in the panel, then deepen the decisions farmers actually lose money on. Backed by Dutch-farmer research (CBS/WUR/CTGB). All within $0 / no-backend / Open-Meteo.
+
+**Session 8: Layout surgery — spotlight the answer** ✅ done (2026-06-16)
+- [x] Reordered ConditionPanel: advice strip + 7-day windows now lead; current weather compacted; raw metrics (wind compass + tiles) + sparkline demoted under a collapsible "Details" toggle (open on desktop, collapsed on mobile)
+- [x] Rescaled advice cards to read like a traffic light (h-5 dots, text-sm labels, stronger glow)
+
+**Session 9: Hourly data foundation + Spray Intelligence pack**
+- [ ] Add hourly fields to `openMeteo.ts` (temp, RH, dew point, precip, wind); `HourlyForecast[]` on `PointForecast`
+- [ ] Delta-T spray-quality score (Stull wet-bulb), rain-free-window counter, inversion/dew risk flag in `evaluate.ts`; surfaced under the spray card
+
+**Session 10: Late blight (potato) + trafficability + ground frost**
+- [ ] Smith-period late-blight pressure index (potato only, via `crop.lateBlight` config)
+- [ ] Soil trafficability proxy + ground-frost (soil 0cm) — needs `soil_temperature_0cm`, `soil_moisture_0_to_1cm`
+
+**Session 11: Dairy — grass + mowing window**
+- [ ] `Gras` crop config + `sector`/`activities` field so panel renders mowing instead of harvest/blight
+- [ ] Mowing window: first run of 3+ consecutive dry days in the forecast
+
 ---
 
 ## Architecture Notes

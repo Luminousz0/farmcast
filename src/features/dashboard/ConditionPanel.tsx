@@ -178,15 +178,15 @@ interface AdviceCardProps {
 function AdviceCard({ title, score, reason, legallyBlocked, legalReason }: AdviceCardProps) {
   const color = SCORE_COLOR[score];
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-2.5 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-3.5 text-center">
       <div className="text-[10px] font-medium uppercase tracking-wide text-white/40">
         {title}
       </div>
       <div
-        className="h-3 w-3 rounded-full"
-        style={{ backgroundColor: color, boxShadow: `0 0 8px 2px ${color}55` }}
+        className="h-5 w-5 rounded-full"
+        style={{ backgroundColor: color, boxShadow: `0 0 12px 3px ${color}66` }}
       />
-      <div className="text-[11px] font-semibold" style={{ color }}>
+      <div className="text-sm font-semibold" style={{ color }}>
         {SCORE_LABEL[score]}
       </div>
       <div className="text-[10px] leading-tight text-white/35">{reason}</div>
@@ -212,12 +212,12 @@ function FrostCard({ hasFrost, reason }: FrostCardProps) {
   const color = hasFrost ? '#f87171' : '#34d399';
   const label = hasFrost ? 'Risico' : 'Veilig';
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-2.5 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2 py-3.5 text-center">
       <div className="text-[10px] font-medium uppercase tracking-wide text-white/40">
         Vorst
       </div>
-      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 8px 2px ${color}55` }} />
-      <div className="text-[11px] font-semibold" style={{ color }}>{label}</div>
+      <div className="h-5 w-5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 12px 3px ${color}66` }} />
+      <div className="text-sm font-semibold" style={{ color }}>{label}</div>
       <div className="text-[10px] leading-tight text-white/35">{reason}</div>
     </div>
   );
@@ -420,6 +420,11 @@ export function ConditionPanel({
 }: ConditionPanelProps) {
   const [showSave, setShowSave] = useState(false);
   const [saveName, setSaveName] = useState("");
+  // Raw metrics are supporting data, not the answer: open by default on desktop,
+  // collapsed on mobile where the decision should own the first screen.
+  const [showDetails, setShowDetails] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768,
+  );
   const saveInputRef = useRef<HTMLInputElement>(null);
 
   const current = forecast?.current;
@@ -564,41 +569,61 @@ export function ConditionPanel({
 
         {current && !loading && !error && (
           <>
-            {/* Weather glyph + temperature */}
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-4xl">{weather?.glyph}</span>
-              <div>
-                <div className="text-3xl font-bold">
-                  <AnimatedNumber value={current.temperature} decimals={1} />
-                  <span className="ml-0.5 text-xl font-medium text-white/50">°C</span>
-                </div>
-                <div className="text-sm text-white/50">{weather?.label}</div>
-              </div>
-            </div>
-
-            {/* Metric grid */}
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <WindCompass speed={current.windSpeed} direction={current.windDirection} />
-              <Metric label="Neerslag" value={current.precipitation} unit="mm" decimals={1} />
-              <Metric label="Bodemtemp." value={current.soilTemperature} unit="°C" decimals={1} />
-              <Metric label="Vochtigheid" value={current.humidity} unit="%" />
-              {current.soilMoisture !== undefined && (
-                <Metric label="Bodemvocht" value={current.soilMoisture * 100} unit="%" decimals={1} />
-              )}
-            </div>
-
-            {/* Farm advice strip */}
+            {/* The answer first: farm advice strip */}
             {advice && <AdviceStrip advice={advice} crop={selectedCrop} />}
 
-            {/* 7-day temperature sparkline */}
-            {forecast.daily.length > 0 && (
-              <WeekSparkline daily={forecast.daily} />
-            )}
-
-            {/* 7-day best window dots */}
+            {/* The planning horizon: 7-day best window dots */}
             {forecast.daily.length > 0 && windowScores.length > 0 && (
               <BestWindowRow daily={forecast.daily} scores={windowScores} />
             )}
+
+            {/* Compact current weather line */}
+            <div className="mt-4 flex items-center gap-3 border-t border-white/[0.06] pt-3">
+              <span className="text-3xl">{weather?.glyph}</span>
+              <div>
+                <div className="text-2xl font-bold">
+                  <AnimatedNumber value={current.temperature} decimals={1} />
+                  <span className="ml-0.5 text-lg font-medium text-white/50">°C</span>
+                </div>
+                <div className="text-xs text-white/50">{weather?.label}</div>
+              </div>
+            </div>
+
+            {/* Raw metrics — supporting data, collapsible */}
+            <div className="mt-3">
+              <button
+                onClick={() => setShowDetails((v) => !v)}
+                className="flex w-full items-center justify-between rounded-lg px-1 py-1 text-[11px] font-medium uppercase tracking-wide text-white/40 transition hover:text-white/70"
+              >
+                <span>Details</span>
+                <span className={`transition-transform ${showDetails ? "rotate-180" : ""}`}>▾</span>
+              </button>
+              <AnimatePresence initial={false}>
+                {showDetails && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <WindCompass speed={current.windSpeed} direction={current.windDirection} />
+                      <Metric label="Neerslag" value={current.precipitation} unit="mm" decimals={1} />
+                      <Metric label="Bodemtemp." value={current.soilTemperature} unit="°C" decimals={1} />
+                      <Metric label="Vochtigheid" value={current.humidity} unit="%" />
+                      {current.soilMoisture !== undefined && (
+                        <Metric label="Bodemvocht" value={current.soilMoisture * 100} unit="%" decimals={1} />
+                      )}
+                    </div>
+                    {/* 7-day temperature sparkline */}
+                    {forecast.daily.length > 0 && (
+                      <WeekSparkline daily={forecast.daily} />
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <div className="mt-3 text-[11px] text-white/30">
               Bron: Open-Meteo ·{" "}
