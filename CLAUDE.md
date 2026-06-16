@@ -172,9 +172,16 @@ Goal: spotlight the answer in the panel, then deepen the decisions farmers actua
 - [x] `computeSoilIntelligence()` in `evaluate.ts` — ground frost (0cm ≤ 0°C), trafficability (moisture 0–1cm proxy), late-blight pressure hours
 - [x] `SoilIntelCard` in `ConditionPanel` — renders below SprayIntelCard; potato shows Phytophthora pressure dot + hours
 
-**Session 11: Dairy — grass + mowing window**
-- [ ] `Gras` crop config + `sector`/`activities` field so panel renders mowing instead of harvest/blight
-- [ ] Mowing window: first run of 3+ consecutive dry days in the forecast
+**Session 11: Dairy — grass + mowing window** ✅ done (2026-06-16)
+- [x] `Gras` crop config + `MowingThresholds`; `harvest` made optional on `CropConfig` so dairy crops omit it cleanly
+- [x] Mowing window: `computeMowingWindow()` finds first 3-consecutive-good-day run in daily forecast; panel shows "Maaien" advice card + "Maaivenster — 7 dagen" row with highlighted best window and human-readable date range
+
+**Session 12: Septoria pressure + irrigation advice + satellite map** ✅ done (2026-06-16)
+- [x] `SeptoriaConfig` schema in `crop.ts`; `septoria` field wired on `wheat.ts` (leaf-wetness hours: RH ≥ 85% OR precip > 0, 4–25°C, ≥ 10h = high / ≥ 5h = low)
+- [x] Septoria pressure scoring in `computeSoilIntelligence()` — mirrors late-blight block; rendered as "Septoria druk" row in SoilIntelCard (wheat only)
+- [x] `et0_fao_evapotranspiration` added to Open-Meteo daily request + `DailyForecast` type
+- [x] `computeIrrigationAdvice()` in `evaluate.ts` — 7-day cumulative water deficit (ET0 − precip); thresholds > 20mm = irrigate, 10–20mm = caution, < 10mm = no need; `IrrigationCard` in panel for all arable crops (hidden for Gras)
+- [x] `SATELLITE_MAP_STYLE` in `mapStyle.ts` using ESRI World Imagery (free, no key); frosted-glass pill toggle button on FarmMap switching between dark and satellite view
 
 ---
 

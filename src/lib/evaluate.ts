@@ -103,6 +103,47 @@ export interface SoilIntelligence {
   /** Late-blight pressure (potato only) — hours in next 24h meeting Smith Period conditions */
   lateBlightPressureHours?: number;
   lateBlightScore?: 'none' | 'low' | 'high';
+  /** Septoria pressure (wheat only) — leaf-wetness hours in next 24h */
+  septoriaPressureHours?: number;
+  septoriaScore?: 'none' | 'low' | 'high';
+}
+
+// ── Irrigation advice ─────────────────────────────────────────────────────────
+
+export interface IrrigationAdvice {
+  /** Cumulative 7-day water deficit (ET0 − precip), mm. Negative = surplus. */
+  weeklyDeficitMm: number;
+  score: ConditionScore;
+  reason: string;
+  /** Per-day deficit (ET0 − precip, clamped to ≥ 0) */
+  dailyDeficits: number[];
+}
+
+/**
+ * Compute irrigation advice from the 7-day daily forecast.
+ * Returns null when ET0 data is unavailable (shouldn't happen with Open-Meteo).
+ */
+export function computeIrrigationAdvice(daily: DailyForecast[]): IrrigationAdvice | null {
+  if (daily.length === 0 || daily[0].et0 === undefined) return null;
+
+  const dailyDeficits = daily.map((d) => Math.max(0, (d.et0 ?? 0) - d.precipitation));
+  const weeklyDeficitMm = Math.round(dailyDeficits.reduce((a, b) => a + b, 0) * 10) / 10;
+
+  let score: ConditionScore;
+  let reason: string;
+
+  if (weeklyDeficitMm > 20) {
+    score = 'stop';
+    reason = `Beregening aanbevolen — tekort ${weeklyDeficitMm} mm/week`;
+  } else if (weeklyDeficitMm > 10) {
+    score = 'caution';
+    reason = `Let op — tekort ${weeklyDeficitMm} mm/week`;
+  } else {
+    score = 'go';
+    reason = `Geen beregening nodig — tekort ${weeklyDeficitMm} mm/week`;
+  }
+
+  return { weeklyDeficitMm, score, reason, dailyDeficits };
 }
 
 /**
@@ -156,6 +197,24 @@ export function computeSoilIntelligence(
     else lateBlightScore = 'none';
   }
 
+  // Septoria pressure (wheat only)
+  let septoriaPressureHours: number | undefined;
+  let septoriaScore: 'none' | 'low' | 'high' | undefined;
+
+  if (crop.septoria) {
+    const { minTempC, maxTempC, minRhPct, pressureHoursHigh, pressureHoursLow } = crop.septoria;
+    const pressureHours = hourly.filter(
+      (h) =>
+        h.temperature >= minTempC &&
+        h.temperature <= maxTempC &&
+        (h.humidity >= minRhPct || h.precipitation > 0),
+    ).length;
+    septoriaPressureHours = pressureHours;
+    if (pressureHours >= pressureHoursHigh) septoriaScore = 'high';
+    else if (pressureHours >= pressureHoursLow) septoriaScore = 'low';
+    else septoriaScore = 'none';
+  }
+
   return {
     groundFrost,
     groundFrostTemp: soilTemp0,
@@ -163,6 +222,8 @@ export function computeSoilIntelligence(
     trafficabilityReason,
     lateBlightPressureHours,
     lateBlightScore,
+    septoriaPressureHours,
+    septoriaScore,
   };
 }
 

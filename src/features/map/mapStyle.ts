@@ -35,6 +35,28 @@ export const DARK_MAP_STYLE: StyleSpecification = {
   ],
 };
 
+/** ESRI World Imagery satellite tiles — free, no API key required. */
+export const SATELLITE_MAP_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    esri: {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution:
+        'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP',
+    },
+  },
+  layers: [
+    { id: 'background', type: 'background', paint: { 'background-color': '#000' } },
+    { id: 'esri-satellite', type: 'raster', source: 'esri', paint: { 'raster-opacity': 1 } },
+  ],
+};
+
+export type MapStyleMode = 'dark' | 'satellite';
+
 // Netherlands centred, comfortable zoom for field-level browsing.
 export const NL_VIEW = {
   longitude: 5.29,

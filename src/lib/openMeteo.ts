@@ -29,6 +29,7 @@ const DAILY_FIELDS = [
   "precipitation_sum",
   "weather_code",
   "wind_speed_10m_max",
+  "et0_fao_evapotranspiration",
 ] as const;
 
 const HOURLY_FIELDS = [
@@ -60,6 +61,7 @@ interface OpenMeteoResponse {
     precipitation_sum: number[];
     weather_code: number[];
     wind_speed_10m_max: number[];
+    et0_fao_evapotranspiration?: number[];
   };
   hourly?: {
     time: string[];
@@ -118,6 +120,7 @@ function mapDaily(
     precipitation: raw.precipitation_sum[i] ?? 0,
     weatherCode: raw.weather_code[i] ?? 0,
     windSpeedMax: raw.wind_speed_10m_max[i],
+    et0: raw.et0_fao_evapotranspiration?.[i],
   }));
 }
 

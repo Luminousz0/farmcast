@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import type { ConditionScore, CropConfig } from "@/types/crop";
-import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence, MowingWindowInfo } from "@/lib/evaluate";
-import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoilIntelligence, computeMowingWindow } from "@/lib/evaluate";
+import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence, MowingWindowInfo, IrrigationAdvice } from "@/lib/evaluate";
+import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoilIntelligence, computeMowingWindow, computeIrrigationAdvice } from "@/lib/evaluate";
 import { ALL_CROPS } from "@/data/crops";
 import { describeWeatherCode } from "@/lib/weatherCode";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
@@ -394,6 +394,62 @@ function SoilIntelCard({ intel }: { intel: SoilIntelligence }) {
             </div>
           </>
         )}
+
+        {/* Septoria pressure (wheat only) */}
+        {intel.septoriaScore !== undefined && (
+          <>
+            <div className="h-3 w-px bg-white/10 hidden sm:block" />
+            <div className="flex items-center gap-1.5">
+              <div
+                className="h-2 w-2 rounded-full flex-shrink-0"
+                style={{
+                  backgroundColor: BLIGHT_COLOR[intel.septoriaScore],
+                  boxShadow: `0 0 6px 1px ${BLIGHT_COLOR[intel.septoriaScore]}66`,
+                }}
+              />
+              <span className="text-[11px] text-white/60">
+                Septoria{' '}
+                <span className="font-semibold" style={{ color: BLIGHT_COLOR[intel.septoriaScore] }}>
+                  {BLIGHT_LABEL[intel.septoriaScore]}
+                </span>
+              </span>
+              {intel.septoriaPressureHours !== undefined && (
+                <span className="text-[10px] text-white/30">
+                  {intel.septoriaPressureHours}u bladnat
+                </span>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Irrigation advice card ───────────────────────────────────────────────────
+
+function IrrigationCard({ advice }: { advice: IrrigationAdvice }) {
+  const color = SCORE_COLOR[advice.score];
+  return (
+    <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5">
+      <div className="mb-2 text-[10px] font-medium uppercase tracking-wide text-white/35">
+        Beregening
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <div
+            className="h-2 w-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: color, boxShadow: `0 0 6px 1px ${color}66` }}
+          />
+          <span className="text-[11px] font-semibold" style={{ color }}>
+            {advice.score === 'stop' ? 'Beregening aanbevolen' : advice.score === 'caution' ? 'Let op tekort' : 'Geen beregening nodig'}
+          </span>
+        </div>
+        <div className="h-3 w-px bg-white/10 hidden sm:block" />
+        <span className="text-[10px] text-white/40">
+          7-daags ET0-tekort:{' '}
+          <span className="tabular-nums text-white/60">{advice.weeklyDeficitMm} mm</span>
+        </span>
       </div>
     </div>
   );
@@ -634,6 +690,8 @@ export function ConditionPanel({
   const sprayIntel = forecast?.hourly ? computeSprayIntelligence(forecast.hourly) : null;
   const soilIntel = forecast?.hourly ? computeSoilIntelligence(forecast.hourly, selectedCrop) : null;
   const mowingWindow = forecast?.daily ? computeMowingWindow(forecast.daily, selectedCrop) : null;
+  const irrigationAdvice = forecast?.daily ? computeIrrigationAdvice(forecast.daily) : null;
+  const showIrrigation = irrigationAdvice && !selectedCrop.mowing;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -776,7 +834,10 @@ export function ConditionPanel({
             {/* Hourly spray intelligence — Delta-T, rain-free window, dew risk */}
             {sprayIntel && <SprayIntelCard intel={sprayIntel} />}
 
-            {/* Soil intelligence — trafficability, ground frost, late-blight pressure */}
+            {/* Irrigation advice — ET0 deficit, arable crops only */}
+            {showIrrigation && <IrrigationCard advice={irrigationAdvice} />}
+
+            {/* Soil intelligence — trafficability, ground frost, disease pressure */}
             {soilIntel && <SoilIntelCard intel={soilIntel} />}
 
             {/* The planning horizon: 7-day best window dots */}

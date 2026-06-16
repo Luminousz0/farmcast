@@ -43,6 +43,8 @@ export interface DailyForecast {
   weatherCode: number;
   /** Max wind speed km/h — used by the rules engine for daily window scoring */
   windSpeedMax?: number;
+  /** FAO-56 Penman-Monteith reference evapotranspiration, mm/day */
+  et0?: number;
 }
 
 /** One hour in the 48-hour hourly forecast (next 24h returned by the client). */

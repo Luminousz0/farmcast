@@ -41,6 +41,20 @@ export interface MowingThresholds {
   dryDaysRequired: number;
 }
 
+/** Septoria (Zymoseptoria tritici) pressure configuration (wheat-specific). */
+export interface SeptoriaConfig {
+  /** Min air temperature °C for a pressure hour */
+  minTempC: number;
+  /** Max air temperature °C for a pressure hour */
+  maxTempC: number;
+  /** Min relative humidity % OR precip > 0 counts as leaf-wetness */
+  minRhPct: number;
+  /** Hours per 24h window that trigger high pressure */
+  pressureHoursHigh: number;
+  /** Hours per 24h window that trigger low pressure */
+  pressureHoursLow: number;
+}
+
 /** Smith Period late-blight pressure configuration (potato-specific). */
 export interface LateBlightConfig {
   /** Min air temperature °C for a pressure hour (Smith Period: 10°C) */
@@ -64,4 +78,6 @@ export interface CropConfig {
   mowing?: MowingThresholds;
   /** Present only on crops susceptible to late blight (Phytophthora infestans) */
   lateBlight?: LateBlightConfig;
+  /** Present only on crops susceptible to Septoria (Zymoseptoria tritici) */
+  septoria?: SeptoriaConfig;
 }

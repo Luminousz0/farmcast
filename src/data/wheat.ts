@@ -19,4 +19,11 @@ export const wheat: CropConfig = {
     maxPrecipitation: 3,   // mm — grain quality degrades fast when wet; mould risk
     maxWindSpeed: 50,      // km/h — combine header limit; grain shedding above this
   },
+  septoria: {
+    minTempC: 4,           // °C — Zymoseptoria tritici inactive below 4°C
+    maxTempC: 25,          // °C — spore germination slows above 25°C
+    minRhPct: 85,          // % — leaf wetness threshold
+    pressureHoursHigh: 10, // h — ≥ 10 leaf-wetness hours in 24h = high risk
+    pressureHoursLow: 5,   // h — ≥ 5h = low risk
+  },
 };
