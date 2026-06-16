@@ -22,9 +22,12 @@ interface FarmMapProps {
 export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
   const mapRef = useRef<MapRef | null>(null);
 
-  // Viewport-based grid: only fetched while the temperature overlay is active.
   const [gridPoints, setGridPoints] = useState<GridPoint[]>([]);
   const [gridLoading, setGridLoading] = useState(false);
+  // layerHidden: true while the grid is stale (during zoom or initial load).
+  // The overlay stays invisible until fresh data arrives so users never see
+  // circles that don't match the current viewport zoom/position.
+  const [layerHidden, setLayerHidden] = useState(true);
   const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchingRef = useRef(false);
 
@@ -51,17 +54,23 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
     try {
       const pts = await getGridForecast(generateViewportGrid(bbox));
       setGridPoints(pts);
+      setLayerHidden(false); // fresh data ready — reveal overlay
     } catch {
-      // Keep existing data on error — don't blank the overlay.
+      setLayerHidden(false); // show stale data rather than blank forever
     } finally {
       fetchingRef.current = false;
       setGridLoading(false);
     }
   }, []);
 
-  // Fetch immediately when switching to the temperature layer.
+  // When switching to temperature: hide until the first fetch completes.
   useEffect(() => {
-    if (needsGrid) fetchViewportGrid();
+    if (needsGrid) {
+      setLayerHidden(true);
+      fetchViewportGrid();
+    } else {
+      setLayerHidden(true); // reset for next time layer is activated
+    }
   }, [needsGrid, fetchViewportGrid]);
 
   const handleLoad = useCallback(() => {
@@ -78,12 +87,20 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
       curve: 1.4,
     });
 
-    // Globe vignette looks great for the fly-in, muddies flat overlays after.
     map.once("moveend", () => {
       map.setProjection({ type: "mercator" });
     });
   }, []);
 
+  // When the user starts zooming, hide the overlay immediately — the sampled
+  // grid is for the old zoom level and will look wrong (too-large or too-small
+  // circles) until fresh data arrives after the zoom settles.
+  const handleZoomStart = useCallback(() => {
+    if (needsGrid) setLayerHidden(true);
+  }, [needsGrid]);
+
+  // After any map movement: debounce a grid refetch. onZoomEnd fires just
+  // before onMoveEnd in MapLibre, so a single handler covers both.
   const handleMoveEnd = useCallback(() => {
     if (!needsGrid) return;
     if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
@@ -104,6 +121,7 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
         mapStyle={DARK_MAP_STYLE}
         initialViewState={INTRO_VIEW}
         onLoad={handleLoad}
+        onZoomStart={handleZoomStart}
         onMoveEnd={handleMoveEnd}
         onClick={handleClick}
         attributionControl={false}
@@ -112,7 +130,11 @@ export function FarmMap({ selected, onSelect, activeLayer }: FarmMapProps) {
       >
         <AttributionControl compact position="bottom-left" />
 
-        <HeatmapLayer gridPoints={gridPoints} activeLayer={activeLayer} />
+        <HeatmapLayer
+          gridPoints={gridPoints}
+          activeLayer={activeLayer}
+          hidden={layerHidden}
+        />
         <RainRadarLayer activeLayer={activeLayer} />
 
         {selected && (
