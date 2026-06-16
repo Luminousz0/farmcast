@@ -45,11 +45,24 @@ export interface DailyForecast {
   windSpeedMax?: number;
 }
 
+/** One hour in the 48-hour hourly forecast (next 24h returned by the client). */
+export interface HourlyForecast {
+  /** ISO datetime string (YYYY-MM-DDTHH:00) */
+  time: string;
+  temperature: number;
+  humidity: number;
+  dewPoint: number;
+  precipitation: number;
+  windSpeed: number;
+}
+
 /** Everything the glass panel needs for one location. */
 export interface PointForecast {
   location: LatLon;
   current: CurrentConditions;
   daily: DailyForecast[];
+  /** Next 24 hours of hourly data, starting from the current hour. */
+  hourly: HourlyForecast[];
 }
 
 /** Axis-aligned bounding box in lat/lon degrees. */

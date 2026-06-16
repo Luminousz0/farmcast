@@ -162,9 +162,9 @@ Goal: spotlight the answer in the panel, then deepen the decisions farmers actua
 - [x] Reordered ConditionPanel: advice strip + 7-day windows now lead; current weather compacted; raw metrics (wind compass + tiles) + sparkline demoted under a collapsible "Details" toggle (open on desktop, collapsed on mobile)
 - [x] Rescaled advice cards to read like a traffic light (h-5 dots, text-sm labels, stronger glow)
 
-**Session 9: Hourly data foundation + Spray Intelligence pack**
-- [ ] Add hourly fields to `openMeteo.ts` (temp, RH, dew point, precip, wind); `HourlyForecast[]` on `PointForecast`
-- [ ] Delta-T spray-quality score (Stull wet-bulb), rain-free-window counter, inversion/dew risk flag in `evaluate.ts`; surfaced under the spray card
+**Session 9: Hourly data foundation + Spray Intelligence pack** ✅ done (2026-06-16)
+- [x] Add hourly fields to `openMeteo.ts` (temp, RH, dew point, precip, wind); `HourlyForecast[]` on `PointForecast`
+- [x] Delta-T spray-quality score (Stull wet-bulb), rain-free-window counter, inversion/dew risk flag in `evaluate.ts`; surfaced under the spray card
 
 **Session 10: Late blight (potato) + trafficability + ground frost**
 - [ ] Smith-period late-blight pressure index (potato only, via `crop.lateBlight` config)

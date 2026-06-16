@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import type { ConditionScore, CropConfig } from "@/types/crop";
-import type { CurrentAdvice, DayWindowScore } from "@/lib/evaluate";
-import { scoreCurrentConditions, scoreDay } from "@/lib/evaluate";
+import type { CurrentAdvice, DayWindowScore, SprayIntelligence } from "@/lib/evaluate";
+import { scoreCurrentConditions, scoreDay, computeSprayIntelligence } from "@/lib/evaluate";
 import { ALL_CROPS } from "@/data/crops";
 import { describeWeatherCode } from "@/lib/weatherCode";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
@@ -252,6 +252,69 @@ function AdviceStrip({ advice, crop }: AdviceStripProps) {
   );
 }
 
+// ── Spray intelligence strip ─────────────────────────────────────────────────
+
+const SCORE_DOT: Record<ConditionScore, string> = {
+  go:      'bg-go',
+  caution: 'bg-caution',
+  stop:    'bg-stop',
+};
+
+function SprayIntelCard({ intel }: { intel: SprayIntelligence }) {
+  const dtColor = SCORE_COLOR[intel.deltaTScore];
+  return (
+    <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5">
+      <div className="mb-2 text-[10px] font-medium uppercase tracking-wide text-white/35">
+        Spuitkwaliteit
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Delta-T */}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="h-2 w-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: dtColor, boxShadow: `0 0 6px 1px ${dtColor}66` }}
+          />
+          <span className="text-[11px] text-white/60">
+            ΔT{' '}
+            <span className="font-semibold tabular-nums" style={{ color: dtColor }}>
+              {intel.deltaT.toFixed(1)}°C
+            </span>
+          </span>
+          <span className="text-[10px] text-white/30">
+            {intel.deltaTScore === 'go' ? 'optimaal' : intel.deltaTScore === 'caution' ? 'te vochtig' : 'te droog'}
+          </span>
+        </div>
+
+        <div className="h-3 w-px bg-white/10 hidden sm:block" />
+
+        {/* Rain-free window */}
+        <div className="flex items-center gap-1.5">
+          <div
+            className={`h-2 w-2 rounded-full flex-shrink-0 ${intel.rainFreeHours >= 4 ? SCORE_DOT.go : intel.rainFreeHours >= 1 ? SCORE_DOT.caution : SCORE_DOT.stop}`}
+          />
+          <span className="text-[11px] text-white/60">
+            Droog venster{' '}
+            <span className="font-semibold tabular-nums text-white/80">
+              {intel.rainFreeHours}u
+            </span>
+          </span>
+        </div>
+
+        {/* Dew risk */}
+        {intel.dewRisk && (
+          <>
+            <div className="h-3 w-px bg-white/10 hidden sm:block" />
+            <div className="flex items-center gap-1 text-[10px]" style={{ color: '#fbbf24' }}>
+              <span>💧</span>
+              <span>Dauwrisico</span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── 7-day window row ────────────────────────────────────────────────────────
 
 interface BestWindowRowProps {
@@ -433,6 +496,7 @@ export function ConditionPanel({
   const advice = current ? scoreCurrentConditions(current, selectedCrop) : null;
   const windowScores: DayWindowScore[] =
     forecast?.daily.map((d) => scoreDay(d, selectedCrop)) ?? [];
+  const sprayIntel = forecast?.hourly ? computeSprayIntelligence(forecast.hourly) : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -571,6 +635,9 @@ export function ConditionPanel({
           <>
             {/* The answer first: farm advice strip */}
             {advice && <AdviceStrip advice={advice} crop={selectedCrop} />}
+
+            {/* Hourly spray intelligence — Delta-T, rain-free window, dew risk */}
+            {sprayIntel && <SprayIntelCard intel={sprayIntel} />}
 
             {/* The planning horizon: 7-day best window dots */}
             {forecast.daily.length > 0 && windowScores.length > 0 && (

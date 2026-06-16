@@ -1,5 +1,5 @@
 import type { ConditionScore, CropConfig } from '@/types/crop';
-import type { CurrentConditions, DailyForecast } from '@/types/weather';
+import type { CurrentConditions, DailyForecast, HourlyForecast } from '@/types/weather';
 import { CTGB_LEGAL_WIND_KMH } from '@/data/sprayLegal';
 
 export interface CurrentAdvice {
@@ -20,6 +20,61 @@ export interface DayWindowScore {
   sprayLegallyBlocked: boolean;
   harvest: ConditionScore;
   frost: boolean;
+}
+
+// ── Hourly spray intelligence ────────────────────────────────────────────────
+
+export interface SprayIntelligence {
+  /** Delta-T = dry-bulb − wet-bulb (°C). Optimal 2–8 for NL field spraying. */
+  deltaT: number;
+  deltaTScore: ConditionScore;
+  /** Consecutive rain-free hours from now (precip < 0.1 mm/h). */
+  rainFreeHours: number;
+  /** True when T − dew point < 3 °C — dew formation / leaf-wetness risk. */
+  dewRisk: boolean;
+}
+
+/**
+ * Stull (2011) wet-bulb approximation from dry-bulb (°C) and relative humidity (%).
+ * Accurate within ~0.65 °C for 5% ≤ RH ≤ 99%, −20 ≤ T ≤ 50 °C.
+ */
+function stullWetBulb(t: number, rh: number): number {
+  return (
+    t * Math.atan(0.151977 * Math.sqrt(rh + 8.313659)) +
+    Math.atan(t + rh) -
+    Math.atan(rh - 1.676331) +
+    0.00391838 * Math.pow(rh, 1.5) * Math.atan(0.023101 * rh) -
+    4.686035
+  );
+}
+
+/**
+ * Derive spray intelligence metrics from the next 24 h of hourly data.
+ * Uses the first (current) hour for Delta-T and dew risk; scans forward for rain-free window.
+ */
+export function computeSprayIntelligence(hourly: HourlyForecast[]): SprayIntelligence | null {
+  if (hourly.length === 0) return null;
+
+  const h0 = hourly[0];
+  const wetBulb = stullWetBulb(h0.temperature, h0.humidity);
+  const deltaT = Math.round((h0.temperature - wetBulb) * 10) / 10;
+
+  let deltaTScore: ConditionScore;
+  if (deltaT < 2) deltaTScore = 'caution';       // won't evaporate; drift risk
+  else if (deltaT > 8) deltaTScore = 'stop';     // too dry; evaporation / phytotox risk
+  else deltaTScore = 'go';                        // 2–8 °C optimal window
+
+  // Count consecutive hours where precipitation < 0.1 mm/h
+  let rainFreeHours = 0;
+  for (const h of hourly) {
+    if (h.precipitation < 0.1) rainFreeHours++;
+    else break;
+  }
+
+  // Dew risk: air near saturation → condensation on leaves within the hour
+  const dewRisk = (h0.temperature - h0.dewPoint) < 3;
+
+  return { deltaT, deltaTScore, rainFreeHours, dewRisk };
 }
 
 /** Score current conditions for the advice strip (uses full current data incl. wind). */

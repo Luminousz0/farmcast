@@ -5,6 +5,7 @@ import type {
   CurrentConditions,
   DailyForecast,
   GridPoint,
+  HourlyForecast,
   LatLon,
   PointForecast,
 } from "@/types/weather";
@@ -30,6 +31,14 @@ const DAILY_FIELDS = [
   "wind_speed_10m_max",
 ] as const;
 
+const HOURLY_FIELDS = [
+  "temperature_2m",
+  "relative_humidity_2m",
+  "dew_point_2m",
+  "precipitation",
+  "wind_speed_10m",
+] as const;
+
 interface OpenMeteoResponse {
   current?: {
     time: string;
@@ -50,6 +59,14 @@ interface OpenMeteoResponse {
     weather_code: number[];
     wind_speed_10m_max: number[];
   };
+  hourly?: {
+    time: string[];
+    temperature_2m: number[];
+    relative_humidity_2m: number[];
+    dew_point_2m: number[];
+    precipitation: number[];
+    wind_speed_10m: number[];
+  };
 }
 
 function mapCurrent(
@@ -66,6 +83,23 @@ function mapCurrent(
     soilTemperature: raw.soil_temperature_6cm,
     soilMoisture: raw.soil_moisture_3_to_9cm,
   };
+}
+
+/** Slice hourly data to the next 24 h starting from the current hour. */
+function mapHourly(
+  raw: NonNullable<OpenMeteoResponse["hourly"]>,
+): HourlyForecast[] {
+  const nowIso = new Date().toISOString().slice(0, 13); // "2026-06-16T14"
+  const startIdx = raw.time.findIndex((t) => t.slice(0, 13) >= nowIso);
+  const from = startIdx < 0 ? 0 : startIdx;
+  return raw.time.slice(from, from + 24).map((time, i) => ({
+    time,
+    temperature: raw.temperature_2m[from + i] ?? 0,
+    humidity: raw.relative_humidity_2m[from + i] ?? 0,
+    dewPoint: raw.dew_point_2m[from + i] ?? 0,
+    precipitation: raw.precipitation[from + i] ?? 0,
+    windSpeed: raw.wind_speed_10m[from + i] ?? 0,
+  }));
 }
 
 function mapDaily(
@@ -144,6 +178,7 @@ export async function getForecast(loc: LatLon): Promise<PointForecast> {
     longitude: loc.lon.toFixed(4),
     current: CURRENT_FIELDS.join(","),
     daily: DAILY_FIELDS.join(","),
+    hourly: HOURLY_FIELDS.join(","),
     wind_speed_unit: "kmh",
     timezone: "Europe/Amsterdam",
     forecast_days: "7",
@@ -165,5 +200,6 @@ export async function getForecast(loc: LatLon): Promise<PointForecast> {
     location: loc,
     current: mapCurrent(data.current),
     daily: data.daily ? mapDaily(data.daily) : [],
+    hourly: data.hourly ? mapHourly(data.hourly) : [],
   };
 }
