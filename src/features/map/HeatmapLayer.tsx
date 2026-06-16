@@ -30,6 +30,7 @@ export function HeatmapLayer({ gridPoints, activeLayer, hidden }: HeatmapLayerPr
       <Layer
         id="fc-temp"
         type="circle"
+        minzoom={5}
         maxzoom={9}
         layout={{ visibility: visible ? 'visible' : 'none' }}
         paint={{
