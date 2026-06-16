@@ -32,15 +32,21 @@ farmcast/
 
 ## Product Vision
 
-A single immersive screen:
-- **Full-bleed dark MapLibre map** of the Netherlands, with a cinematic globe → NL fly-in on load.
-- **Animated wind streamlines** flowing across the country (the signature Windy effect).
-- **Live looping rain radar** (real precipitation, RainViewer).
-- A **country-wide condition overlay** — a smooth heatmap whose color = a computed score (spray suitability, frost risk, rainfall) for that location, with a layer switcher.
-- A **⌘K location search** + click-to-pick + "use my location"; selecting a field flies the camera there and opens a **floating glass panel** with live metrics and farm advice (spray go/no-go, frost alert, harvest window) — glowing status indicators, animated counters.
-- A **time scrubber + auto-play time-lapse** that animates the overlay and advice across the 7-day forecast.
+A single immersive screen where **the panel is the product, the map is the backdrop.**
 
-Crop logic is **data, not code**: each crop is a threshold config; a generic evaluator scores any forecast against it; the same scores drive both the panel and the map overlay.
+The map is a dark, full-bleed MapLibre canvas — a beautiful location picker. The real product is the glass panel that opens when you select a field: live metrics, farm advice, and a 7-day "best window" row that tells a farmer at a glance which days are good to spray or harvest — without reading a number.
+
+- **Full-bleed dark MapLibre map** of the Netherlands.
+- **⌘K location search** + click-to-pick + "use my location"; selecting a field flies the camera there and opens the glass panel.
+- **Floating glass panel** with live metrics (temp, wind, soil, humidity), a custom wind compass, and a 7-day sparkline.
+- **Farm advice strip** inside the panel: spray go/no-go, frost alert, harvest window — glowing green/amber/red indicators, driven by a crop rules engine.
+- **"Best window" row** — 7 day columns each with a single go/caution/stop dot for the selected activity. Farmer glances, knows Thursday and Friday are good. No time scrubber needed.
+- **Field bookmarks** (localStorage) — save named fields like "Polder Noord", each with a quick status dot. The app becomes *theirs*.
+- **Deeplink sharing** (`?lat=52.3&lon=5.1`) — share a field's conditions as a URL, zero backend.
+- **Dutch legal spray thresholds** — NL ctgb.nl wind limits per pesticide class, hardcoded as config. Not just "conditions are borderline" but "this is legally off-limits today."
+- **PWA push alerts** — service worker notifies when a spray window opens for a saved field. The app comes to you.
+
+Crop logic is **data, not code**: each crop is a threshold config; a generic evaluator scores any forecast against it.
 
 ---
 
@@ -114,36 +120,49 @@ Goal: a full-screen living NL map you can search, click, and read conditions fro
 - [x] Live rain radar overlay (RainViewer, looping 600 ms/frame)
 
 ### Phase 2 — From data to judgment
-Goal: turn the map and panel into actual farm advice.
+Goal: turn the panel into actual farm advice with a rules engine.
 
-**Session 4: Rules engine**
-- [ ] Crop-threshold schema in `src/types/`; generic `scoreDay` evaluator in `src/lib/`
-- [ ] One sample crop config (e.g. maize); wire scores into the panel
-- [ ] Switch a map overlay to a computed "spray suitability" score
+**Session 4: Rules engine + advice strip** ✅ done (2026-06-16)
+- [x] Crop-threshold schema in `src/types/crop.ts`; `scoreCurrentConditions` + `scoreDay` in `src/lib/evaluate.ts`
+- [x] Maize crop config in `src/data/maize.ts` (spray, frost, harvest thresholds; ctgb.nl wind limits)
+- [x] Daily `wind_speed_10m_max` added to Open-Meteo request + `DailyForecast` type
+- [x] Advice strip in the panel: spray go/no-go, frost alert, harvest window — glowing green/amber/red indicators
+- [x] "Best window" rows — 7 day columns with colored dots for spray + harvest; frost ❄ indicator per day
 
-**Session 5: Activity advisor + time scrubber**
-- [ ] Glass panel advice: spray go/no-go, frost alert, harvest-window (runs of dry days) — glowing indicators
-- [ ] 7-day time scrubber + auto-play time-lapse animating both panel advice and map overlay
+**Session 5: Crop picker + Dutch legal thresholds** ✅ done (2026-06-16)
+- [x] Crop picker UI in the panel (pill tabs); re-scores all advice on change
+- [x] Added 3 more crop configs: Aardappel, Tarwe, Ui (`src/data/`) — `ALL_CROPS` barrel in `src/data/crops.ts`
+- [x] Dutch legal spray wind limits (ctgb.nl class I/II/III) in `src/data/sprayLegal.ts`; `pesticideClass` on each CropConfig; "⚖ Wettelijk verboden" badge in spray card + ⚖ indicator in 7-day spray window row
 
-**Session 6: Crop suitability**
-- [ ] Crop picker; overlay + panel re-color by the selected crop's thresholds
-- [ ] Add 2–3 more crop configs
+### Phase 3 — Make it yours
+Goal: saved fields + shareability — turns the tool from demo into something a farmer returns to.
 
-### Phase 3 — Credibility & polish
-**Session 7: KNMI + deck.gl upgrade** — add the NL authoritative source (free key in `.env`); upgrade overlays to deck.gl for smoother interpolation.
-**Session 8: Polish + PWA + ship** — motion pass, skeleton/loading/error/empty states, mobile bottom-sheet panels, `vite-plugin-pwa`, deploy to Cloudflare Pages/Vercel (free), short landing/explainer.
+**Session 6: Field bookmarks + deeplink sharing**
+- [ ] Field bookmarks (localStorage): save named fields, quick-switch from a side panel or top bar
+- [ ] Each bookmark shows a live status dot (go/caution/stop) for the current active crop
+- [ ] Deeplink: read `?lat=&lon=` on load, write it on field select — shareable URLs, zero backend
 
-### Phase 4 — Native mobile (later)
-Decide PWA vs Capacitor vs React Native/Expo; build and test on a real phone.
+**Session 7: Polish + PWA + ship**
+- [ ] Motion pass: skeleton/loading/error states, mobile bottom-sheet panels
+- [ ] `vite-plugin-pwa` — installable to phone; service worker push for spray window alerts on saved fields
+- [ ] Deploy to Cloudflare Pages/Vercel (free), short landing/explainer
+
+### Phase 4 — Living map overlays (if still wanted)
+Country-wide heatmaps and wind particles are beautiful but not the core product. Revisit here once farm advice is proven.
+- [ ] NL grid sampler → MapLibre heatmap showing spray suitability score across the country
+- [ ] Animated wind particle layer; RainViewer rain radar overlay; layer switcher
+- [ ] deck.gl upgrade for smoother interpolation if needed
 
 ---
 
 ## Architecture Notes
 
-- **`src/lib/openMeteo.ts`** — typed client: `getForecast(lat, lon)` for the panel, `getGridForecast(points[])` (Open-Meteo accepts comma-separated multi-coordinates per request) for the country overlay.
-- **Country overlay sampling** — precompute a grid over the NL bounding box (~lat 50.75–53.55, lon 3.35–7.22). MVP: coarse grid (~0.2–0.25°, ~150 pts), batched + cached. Each point → condition score → MapLibre heatmap with a green→amber→red ramp. Densify once it looks right.
-- **Rules engine** — `src/types/crop.ts` (threshold schema), `src/lib/evaluate.ts` (`scoreDay(forecast, crop)`), `src/data/*.ts` (crop configs).
-- **State** — light: React hooks + small store (Zustand if needed) for selected location, active layer, time index, selected crop.
+- **`src/lib/openMeteo.ts`** — typed client: `getForecast(lat, lon)` for the panel, `getGridForecast(points[])` for future overlays.
+- **Rules engine** — `src/types/crop.ts` (threshold schema), `src/lib/evaluate.ts` (`scoreDay(forecast, crop)` → `{spray, frost, harvest}` scores), `src/data/*.ts` (crop configs). Adding a crop = adding one config file, never touching the engine.
+- **Dutch legal thresholds** — `src/data/sprayLegal.ts`: pesticide class → max wind speed (km/h) per ctgb.nl. Evaluated separately from crop thresholds; shown as a distinct "legally off-limits" flag.
+- **Field bookmarks** — `localStorage` key `farmcast:fields`: `{ id, name, lat, lon }[]`. A `useFields` hook manages CRUD + live status dots via `usePointForecast` per saved field.
+- **Deeplinks** — `App.tsx` reads `?lat=&lon=` on mount via `URLSearchParams`; writes it on every field select with `history.replaceState`.
+- **State** — React hooks + `localStorage` for bookmarks. Add Zustand only if selected crop + time index + active overlay become painful to thread as props.
 
 ---
 

@@ -27,6 +27,7 @@ const DAILY_FIELDS = [
   "temperature_2m_min",
   "precipitation_sum",
   "weather_code",
+  "wind_speed_10m_max",
 ] as const;
 
 interface OpenMeteoResponse {
@@ -47,6 +48,7 @@ interface OpenMeteoResponse {
     temperature_2m_min: number[];
     precipitation_sum: number[];
     weather_code: number[];
+    wind_speed_10m_max: number[];
   };
 }
 
@@ -75,6 +77,7 @@ function mapDaily(
     tempMin: raw.temperature_2m_min[i] ?? 0,
     precipitation: raw.precipitation_sum[i] ?? 0,
     weatherCode: raw.weather_code[i] ?? 0,
+    windSpeedMax: raw.wind_speed_10m_max[i],
   }));
 }
 

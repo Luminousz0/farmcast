@@ -41,6 +41,8 @@ export interface DailyForecast {
   /** Total precipitation, mm */
   precipitation: number;
   weatherCode: number;
+  /** Max wind speed km/h — used by the rules engine for daily window scoring */
+  windSpeedMax?: number;
 }
 
 /** Everything the glass panel needs for one location. */
