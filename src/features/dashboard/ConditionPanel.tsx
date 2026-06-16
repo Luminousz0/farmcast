@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import type { ConditionScore, CropConfig } from "@/types/crop";
@@ -13,6 +13,9 @@ interface ConditionPanelProps {
   loading: boolean;
   error: string | null;
   label: string;
+  selectedCrop: CropConfig;
+  onCropChange: (crop: CropConfig) => void;
+  onSave: (name: string) => void;
   onClose: () => void;
 }
 
@@ -410,9 +413,14 @@ export function ConditionPanel({
   loading,
   error,
   label,
+  selectedCrop,
+  onCropChange,
+  onSave,
   onClose,
 }: ConditionPanelProps) {
-  const [selectedCrop, setSelectedCrop] = useState<CropConfig>(ALL_CROPS[0]);
+  const [showSave, setShowSave] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const saveInputRef = useRef<HTMLInputElement>(null);
 
   const current = forecast?.current;
   const weather = current ? describeWeatherCode(current.weatherCode) : null;
@@ -423,11 +431,22 @@ export function ConditionPanel({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (showSave) { setShowSave(false); return; }
+        onClose();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, showSave]);
+
+  useEffect(() => {
+    if (showSave) {
+      setSaveName(label);
+      saveInputRef.current?.focus();
+      saveInputRef.current?.select();
+    }
+  }, [showSave, label]);
 
   return (
     <AnimatePresence>
@@ -441,23 +460,72 @@ export function ConditionPanel({
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-[11px] font-medium uppercase tracking-widest text-brand">
               Veldcondities
             </div>
             <div className="mt-0.5 truncate text-sm text-white/60">{label}</div>
           </div>
-          <button
-            onClick={onClose}
-            className="shrink-0 rounded-lg px-2 py-1 text-white/40 transition hover:bg-white/10 hover:text-white"
-            aria-label="Sluiten"
-          >
-            ✕
-          </button>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              onClick={() => setShowSave((v) => !v)}
+              className="rounded-lg px-2 py-1 text-white/40 transition hover:bg-white/10 hover:text-white"
+              aria-label="Perceel opslaan"
+              title="Perceel opslaan"
+            >
+              {showSave ? "✕" : "🔖"}
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-lg px-2 py-1 text-white/40 transition hover:bg-white/10 hover:text-white"
+              aria-label="Sluiten"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
+        {/* Save field row */}
+        <AnimatePresence>
+          {showSave && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.18 }}
+              className="mt-2 flex gap-1.5 overflow-hidden"
+            >
+              <input
+                ref={saveInputRef}
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && saveName.trim()) {
+                    onSave(saveName.trim());
+                    setShowSave(false);
+                  }
+                }}
+                placeholder="Naam perceel…"
+                className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[12px] text-white placeholder-white/25 outline-none focus:border-brand/50"
+              />
+              <button
+                onClick={() => {
+                  if (saveName.trim()) {
+                    onSave(saveName.trim());
+                    setShowSave(false);
+                  }
+                }}
+                disabled={!saveName.trim()}
+                className="rounded-lg border border-brand/30 bg-brand/10 px-2.5 py-1.5 text-[12px] text-brand transition hover:bg-brand/20 disabled:opacity-30"
+              >
+                Opslaan
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Crop picker */}
-        <CropPicker crops={ALL_CROPS} selected={selectedCrop} onChange={setSelectedCrop} />
+        <CropPicker crops={ALL_CROPS} selected={selectedCrop} onChange={onCropChange} />
 
         {loading && (
           <div className="py-8 text-center text-sm text-white/50">

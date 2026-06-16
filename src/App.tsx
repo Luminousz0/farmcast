@@ -3,23 +3,73 @@ import { motion } from "framer-motion";
 import { FarmMap } from "@/features/map/FarmMap";
 import { SearchPalette } from "@/features/map/SearchPalette";
 import { ConditionPanel } from "@/features/dashboard/ConditionPanel";
+import { FieldsPanel } from "@/features/dashboard/FieldsPanel";
 import { usePointForecast } from "@/hooks/usePointForecast";
+import { useFields } from "@/hooks/useFields";
+import { ALL_CROPS } from "@/data/crops";
 import type { LatLon, NamedLocation } from "@/types/weather";
+import type { CropConfig } from "@/types/crop";
+import type { SavedField } from "@/types/field";
+
+function readDeeplink(): LatLon | null {
+  const params = new URLSearchParams(window.location.search);
+  const lat = parseFloat(params.get("lat") ?? "");
+  const lon = parseFloat(params.get("lon") ?? "");
+  if (isNaN(lat) || isNaN(lon)) return null;
+  return { lat, lon };
+}
+
+function writeDeeplink(point: LatLon) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("lat", point.lat.toFixed(5));
+  url.searchParams.set("lon", point.lon.toFixed(5));
+  history.replaceState(null, "", url.toString());
+}
+
+function clearDeeplink() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("lat");
+  url.searchParams.delete("lon");
+  history.replaceState(null, "", url.toString());
+}
 
 export default function App() {
-  const [selected, setSelected] = useState<LatLon | null>(null);
+  const [selected, setSelected] = useState<LatLon | null>(() => readDeeplink());
   const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [selectedCrop, setSelectedCrop] = useState<CropConfig>(ALL_CROPS[0]);
 
   const { forecast, loading, error } = usePointForecast(selected);
+  const { fields, saveField, removeField } = useFields();
 
   const handleMapSelect = (point: LatLon) => {
     setSelected(point);
     setSelectedName(null);
+    writeDeeplink(point);
   };
 
   const handleSearchSelect = (loc: NamedLocation) => {
-    setSelected({ lat: loc.lat, lon: loc.lon });
+    const point = { lat: loc.lat, lon: loc.lon };
+    setSelected(point);
     setSelectedName(loc.name);
+    writeDeeplink(point);
+  };
+
+  const handleFieldSelect = (f: SavedField) => {
+    const point = { lat: f.lat, lon: f.lon };
+    setSelected(point);
+    setSelectedName(f.name);
+    writeDeeplink(point);
+  };
+
+  const handleClose = () => {
+    setSelected(null);
+    setSelectedName(null);
+    clearDeeplink();
+  };
+
+  const handleSave = (name: string) => {
+    if (!selected) return;
+    saveField({ name, lat: selected.lat, lon: selected.lon });
   };
 
   const label =
@@ -56,6 +106,14 @@ export default function App() {
         <SearchPalette onSelect={handleSearchSelect} />
       </motion.div>
 
+      {/* Left: saved fields bookmarks panel */}
+      <FieldsPanel
+        fields={fields}
+        crop={selectedCrop}
+        onSelect={handleFieldSelect}
+        onRemove={removeField}
+      />
+
       {/* Bottom hint when nothing is selected */}
       {!selected && (
         <motion.div
@@ -78,10 +136,10 @@ export default function App() {
             loading={loading}
             error={error}
             label={label}
-            onClose={() => {
-              setSelected(null);
-              setSelectedName(null);
-            }}
+            selectedCrop={selectedCrop}
+            onCropChange={setSelectedCrop}
+            onSave={handleSave}
+            onClose={handleClose}
           />
         </div>
       )}
