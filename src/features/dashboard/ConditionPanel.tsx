@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import type { ConditionScore, CropConfig } from "@/types/crop";
 import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence, MowingWindowInfo, IrrigationAdvice } from "@/lib/evaluate";
@@ -704,12 +704,11 @@ export function ConditionPanel({
 }: ConditionPanelProps) {
   const [showSave, setShowSave] = useState(false);
   const [saveName, setSaveName] = useState("");
-  // Raw metrics are supporting data, not the answer: open by default on desktop,
-  // collapsed on mobile where the decision should own the first screen.
   const [showDetails, setShowDetails] = useState(
     () => typeof window !== "undefined" && window.innerWidth >= 768,
   );
   const saveInputRef = useRef<HTMLInputElement>(null);
+  const dragControls = useDragControls();
 
   const current = forecast?.current;
   const weather = current ? describeWeatherCode(current.weatherCode) : null;
@@ -754,12 +753,26 @@ export function ConditionPanel({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.98 }}
         transition={{ type: "spring", stiffness: 320, damping: 30 }}
-        className="glass pointer-events-auto w-full rounded-t-2xl rounded-b-none max-h-[82vh] overflow-y-auto p-4 text-white md:w-[min(92vw,360px)] md:rounded-2xl md:max-h-[85vh]"
+        drag="y"
+        dragControls={dragControls}
+        dragListener={false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.4 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 80) onClose();
+        }}
+        className="glass pointer-events-auto w-full rounded-t-2xl rounded-b-none text-white md:w-[min(92vw,360px)] md:rounded-2xl lg:w-[min(92vw,420px)]"
       >
-        {/* Mobile drag handle */}
-        <div className="mb-3 flex justify-center md:hidden">
+        {/* Mobile drag handle — touch target for drag-to-dismiss */}
+        <div
+          className="flex justify-center py-2 cursor-grab active:cursor-grabbing touch-none md:hidden"
+          onPointerDown={(e) => dragControls.start(e)}
+        >
           <div className="h-1 w-10 rounded-full bg-white/20" />
         </div>
+
+        {/* Scrollable content area */}
+        <div className="max-h-[80vh] overflow-y-auto px-4 pb-4 pb-safe md:max-h-[85vh] md:p-4 md:pt-4">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -939,6 +952,7 @@ export function ConditionPanel({
             </div>
           </>
         )}
+        </div>{/* end scrollable content */}
       </motion.div>
     </AnimatePresence>
   );

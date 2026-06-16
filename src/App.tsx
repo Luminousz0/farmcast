@@ -37,6 +37,7 @@ export default function App() {
   const [selected, setSelected] = useState<LatLon | null>(() => readDeeplink());
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [selectedCrop, setSelectedCrop] = useState<CropConfig>(ALL_CROPS[0]);
+  const [fieldsMobileOpen, setFieldsMobileOpen] = useState(false);
 
   const { forecast, loading, error } = usePointForecast(selected);
   const { fields, saveField, removeField } = useFields();
@@ -87,7 +88,7 @@ export default function App() {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="pointer-events-none absolute left-5 top-5 z-10"
+        className="pointer-events-none absolute left-5 top-5 z-10 pt-safe"
       >
         <div className="glass pointer-events-auto px-4 py-2">
           <span className="font-display text-xl font-semibold tracking-tight text-white">
@@ -101,18 +102,32 @@ export default function App() {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.6 }}
-        className="pointer-events-none absolute right-5 top-5 z-10"
+        className="pointer-events-none absolute right-5 top-5 z-10 pt-safe"
       >
         <SearchPalette onSelect={handleSearchSelect} />
       </motion.div>
 
-      {/* Left: saved fields bookmarks panel */}
+      {/* Left: saved fields bookmarks panel (desktop floating card + mobile drawer) */}
       <FieldsPanel
         fields={fields}
         crop={selectedCrop}
         onSelect={handleFieldSelect}
         onRemove={removeField}
+        mobileOpen={fieldsMobileOpen}
+        onMobileClose={() => setFieldsMobileOpen(false)}
       />
+
+      {/* Mobile: bookmark toggle button — bottom-left, only when there are saved fields */}
+      {fields.length > 0 && (
+        <button
+          onClick={() => setFieldsMobileOpen(true)}
+          className="glass pointer-events-auto fixed bottom-6 left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full text-base text-white/60 transition hover:text-white md:hidden"
+          style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+          aria-label="Mijn percelen"
+        >
+          🔖
+        </button>
+      )}
 
       {/* Bottom hint when nothing is selected */}
       {!selected && (

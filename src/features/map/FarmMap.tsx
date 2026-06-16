@@ -53,16 +53,17 @@ export function FarmMap({ selected, onSelect }: FarmMapProps) {
         )}
       </Map>
 
-      {/* Satellite / dark map toggle */}
+      {/* Satellite / dark map toggle — lifted above home indicator on notch devices */}
       <button
         onClick={() => setStyleMode((m) => m === 'dark' ? 'satellite' : 'dark')}
         className={[
-          'absolute bottom-8 right-3 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5',
+          'absolute right-3 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5',
           'border text-xs font-medium backdrop-blur-md transition-colors',
           styleMode === 'satellite'
             ? 'border-brand/60 bg-brand/20 text-brand'
             : 'border-white/15 bg-black/40 text-white/70 hover:border-white/30 hover:text-white',
         ].join(' ')}
+        style={{ bottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
         title={styleMode === 'dark' ? 'Schakel naar satellietkaart' : 'Schakel naar donkere kaart'}
       >
         {styleMode === 'dark' ? (

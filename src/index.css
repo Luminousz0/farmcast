@@ -39,6 +39,19 @@ body {
   }
 }
 
+/* Safe-area utilities for notch / home-indicator aware layouts */
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 /* MapLibre attribution: keep it subtle on the warm-dark theme */
 .maplibregl-ctrl-attrib {
   background: rgba(20, 17, 11, 0.6) !important;

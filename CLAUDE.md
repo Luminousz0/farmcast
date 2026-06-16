@@ -193,6 +193,22 @@ Goal: spotlight the answer in the panel, then deepen the decisions farmers actua
 - [x] Hierarchy: `HeroVerdict` block leads the panel (large Fraunces Go/Let op/Nee for the crop's primary activity — mowing for Gras, spraying otherwise); other advice demoted; all `uppercase tracking-wide` micro-labels removed
 - [x] Recolored marker, wind compass, sparkline, crop pills, map toggle, PWA `theme_color`
 
+### Phase 7 — Responsive + PWA native feel
+
+**Session 14: Device optimization + PWA polish** ✅ done (2026-06-16)
+- [x] Viewport: `viewport-fit=cover` — enables safe-area support on notch devices
+- [x] iOS PWA meta tags: `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style: black-translucent`, `apple-mobile-web-app-title`
+- [x] Safe-area CSS utilities (`pt-safe`, `pb-safe`, `mb-safe`) in `index.css` via `env(safe-area-inset-*)`
+- [x] Top controls (header + search) get `pt-safe` so they clear the notch
+- [x] ConditionPanel bottom sheet gets `pb-safe` inner padding so content clears the home indicator
+- [x] FarmMap satellite toggle button repositioned with `env(safe-area-inset-bottom)` so it's never hidden behind the home indicator
+- [x] Search input font raised to `text-base` (16px) — prevents iOS auto-zoom on focus
+- [x] FieldsPanel: hidden on mobile (`hidden md:block`), rendered as Framer Motion bottom drawer when `mobileOpen` — toggled via a floating `🔖` button bottom-left (only when saved fields exist)
+- [x] ConditionPanel: drag-to-dismiss gesture via `useDragControls` — drag handle → `onPointerDown` drives the outer `motion.div`; 80px threshold triggers `onClose()`
+- [x] ConditionPanel: `lg:w-[min(92vw,420px)]` — slightly wider on tablet/desktop
+- [x] PWA raster icons generated with `@vite-pwa/assets-generator`: `pwa-64x64.png`, `pwa-192x192.png`, `pwa-512x512.png`, `maskable-icon-512x512.png`, `apple-touch-icon-180x180.png`, `favicon.ico`
+- [x] `vite.config.ts` manifest updated with full icon array (64/192/512 + maskable + SVG)
+
 ---
 
 ## Architecture Notes
