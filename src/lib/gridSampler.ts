@@ -2,8 +2,8 @@ import type { Bbox, LatLon } from '@/types/weather';
 
 export const NL_BBOX: Bbox = { latMin: 50.75, latMax: 53.55, lonMin: 3.35, lonMax: 7.22 };
 
-// 6×6 = 36 points per viewport — one Open-Meteo batch request, works worldwide.
-export const GRID_DENSITY = 6;
+// 8×8 = 64 points per viewport — one Open-Meteo batch request, better overlap.
+export const GRID_DENSITY = 8;
 
 /**
  * Generate a uniform GRID_DENSITY×GRID_DENSITY grid within the given bbox.

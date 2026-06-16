@@ -98,14 +98,15 @@ function WindCompass({ speed, direction }: { speed: number; direction: number })
             );
           })}
 
-          {/* Direction needle — rotated to wind source direction */}
+          {/* Direction needle — rotate(direction) places ball at FROM position,
+               arrowhead at opposite (TO) position. Wind FROM NW → ball NW, arrow SE. */}
           <g transform={`rotate(${direction})`}>
-            {/* Tail (rear half, dim) */}
-            <line x1="0" y1="20" x2="0" y2="5" stroke="rgba(255,255,255,0.15)" strokeWidth="2.5" strokeLinecap="round" />
-            {/* Shaft (front half, brand cyan) */}
-            <line x1="0" y1="-20" x2="0" y2="5" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
-            {/* Arrowhead */}
-            <polygon points="0,-28 -4.5,-19 4.5,-19" fill="#38bdf8" />
+            {/* Ball at wind source (FROM direction) */}
+            <circle cx="0" cy="-25" r="4.5" fill="#38bdf8" />
+            {/* Shaft connecting ball to arrowhead */}
+            <line x1="0" y1="-20" x2="0" y2="17" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Arrowhead pointing TO (away from source) */}
+            <polygon points="0,27 -4.5,17 4.5,17" fill="#38bdf8" />
           </g>
 
           {/* Center disc — speed display */}

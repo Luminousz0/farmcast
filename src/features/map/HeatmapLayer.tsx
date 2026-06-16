@@ -32,20 +32,19 @@ export function HeatmapLayer({ gridPoints, activeLayer }: HeatmapLayerProps) {
         type="circle"
         layout={{ visibility: visible ? 'visible' : 'none' }}
         paint={{
-          // Radius grows with zoom so circles always overlap and blend smoothly.
-          // At NL zoom (~7), each circle covers roughly the same area as one
-          // grid cell — the blur (=1) fades the edge to transparent, giving a
-          // smooth interpolated look between the 36 grid points.
+          // 8×8 grid at NL zoom (~7) gives ~130px spacing between points.
+          // Radius must exceed half-spacing so circles overlap; blur=0.75 keeps
+          // a larger solid-coloured core so blobs blend rather than show as dots.
           'circle-radius': [
             'interpolate', ['exponential', 2], ['zoom'],
-            3,  60,
-            5,  100,
-            7,  170,
-            9,  280,
-            11, 480,
+            3,  90,
+            5,  140,
+            7,  220,
+            9,  360,
+            11, 600,
           ],
-          'circle-blur': 1,
-          'circle-opacity': 0.55,
+          'circle-blur': 0.75,
+          'circle-opacity': 0.52,
           // Direct temperature → color: no density math, always accurate.
           'circle-color': [
             'interpolate', ['linear'], ['get', 'temperature'],
