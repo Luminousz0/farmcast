@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#070b14"/>
+  <!-- Stalk -->
+  <line x1="256" y1="360" x2="256" y2="200" stroke="#38bdf8" stroke-width="18" stroke-linecap="round"/>
+  <!-- Left leaf -->
+  <path d="M256 280 Q196 240 180 170 Q230 175 256 240" fill="#34d399" opacity="0.9"/>
+  <!-- Right leaf -->
+  <path d="M256 260 Q316 220 332 150 Q282 155 256 220" fill="#34d399" opacity="0.7"/>
+  <!-- Shoot tip -->
+  <circle cx="256" cy="192" r="14" fill="#38bdf8"/>
+  <!-- Ground line -->
+  <rect x="176" y="358" width="160" height="10" rx="5" fill="#38bdf8" opacity="0.3"/>
+</svg>

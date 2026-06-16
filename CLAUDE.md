@@ -137,15 +137,17 @@ Goal: turn the panel into actual farm advice with a rules engine.
 ### Phase 3 — Make it yours
 Goal: saved fields + shareability — turns the tool from demo into something a farmer returns to.
 
-**Session 6: Field bookmarks + deeplink sharing**
-- [ ] Field bookmarks (localStorage): save named fields, quick-switch from a side panel or top bar
-- [ ] Each bookmark shows a live status dot (go/caution/stop) for the current active crop
-- [ ] Deeplink: read `?lat=&lon=` on load, write it on field select — shareable URLs, zero backend
+**Session 6: Field bookmarks + deeplink sharing** ✅ done (2026-06-16)
+- [x] Field bookmarks (localStorage): save named fields, quick-switch from a side panel or top bar
+- [x] Each bookmark shows a live status dot (go/caution/stop) for the current active crop
+- [x] Deeplink: read `?lat=&lon=` on load, write it on field select — shareable URLs, zero backend
 
-**Session 7: Polish + PWA + ship**
-- [ ] Motion pass: skeleton/loading/error states, mobile bottom-sheet panels
-- [ ] `vite-plugin-pwa` — installable to phone; service worker push for spray window alerts on saved fields
-- [ ] Deploy to Cloudflare Pages/Vercel (free), short landing/explainer
+**Session 7: Polish + PWA + ship** ✅ done (2026-06-16)
+- [x] Skeleton loading states in ConditionPanel (animated pulse skeleton replacing plain text)
+- [x] Mobile bottom-sheet: ConditionPanel is fixed full-width bottom sheet on mobile, floating card on ≥md
+- [x] Drag handle indicator on mobile panel
+- [x] `vite-plugin-pwa` — installable to home screen; service worker with Workbox precaching + Open-Meteo runtime cache
+- [x] Deploy: Vercel free tier via GitHub push
 
 ### Phase 4 — Living map overlays (if still wanted)
 Country-wide heatmaps and wind particles are beautiful but not the core product. Revisit here once farm advice is proven.

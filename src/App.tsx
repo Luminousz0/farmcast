@@ -128,9 +128,9 @@ export default function App() {
         </motion.div>
       )}
 
-      {/* Floating condition panel */}
+      {/* Condition panel — bottom sheet on mobile, floating card on desktop */}
       {selected && (
-        <div className="absolute bottom-6 right-6 z-10">
+        <div className="fixed inset-x-0 bottom-0 z-10 md:absolute md:inset-x-auto md:bottom-6 md:right-6">
           <ConditionPanel
             forecast={forecast}
             loading={loading}

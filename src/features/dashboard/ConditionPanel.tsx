@@ -456,8 +456,13 @@ export function ConditionPanel({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.98 }}
         transition={{ type: "spring", stiffness: 320, damping: 30 }}
-        className="glass pointer-events-auto w-[min(92vw,360px)] max-h-[85vh] overflow-y-auto p-4 text-white"
+        className="glass pointer-events-auto w-full rounded-t-2xl rounded-b-none max-h-[82vh] overflow-y-auto p-4 text-white md:w-[min(92vw,360px)] md:rounded-2xl md:max-h-[85vh]"
       >
+        {/* Mobile drag handle */}
+        <div className="mb-3 flex justify-center md:hidden">
+          <div className="h-1 w-10 rounded-full bg-white/20" />
+        </div>
+
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -528,8 +533,26 @@ export function ConditionPanel({
         <CropPicker crops={ALL_CROPS} selected={selectedCrop} onChange={onCropChange} />
 
         {loading && (
-          <div className="py-8 text-center text-sm text-white/50">
-            Gegevens laden…
+          <div className="mt-3 animate-pulse space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-white/10" />
+              <div className="space-y-2">
+                <div className="h-7 w-24 rounded-lg bg-white/10" />
+                <div className="h-3.5 w-16 rounded bg-white/[0.06]" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2 h-40 rounded-xl bg-white/[0.05]" />
+              <div className="h-16 rounded-xl bg-white/[0.05]" />
+              <div className="h-16 rounded-xl bg-white/[0.05]" />
+              <div className="h-16 rounded-xl bg-white/[0.05]" />
+              <div className="h-16 rounded-xl bg-white/[0.05]" />
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="h-20 rounded-xl bg-white/[0.04]" />
+              <div className="h-20 rounded-xl bg-white/[0.04]" />
+              <div className="h-20 rounded-xl bg-white/[0.04]" />
+            </div>
           </div>
         )}
 
