@@ -14,3 +14,7 @@ dist-ssr
 .idea
 *.log
 npm-debug.log*
+
+# Claude Code internal files
+.claude/
+CLAUDE.md
