@@ -25,4 +25,24 @@ export const potato: CropConfig = {
     minRhPct: 90,              // Smith Period: RH ≥ 90% needed for spore germination
     pressureHoursThreshold: 11, // Smith Period: ≥ 11 qualifying hours = pressure day
   },
+  fertilization: {
+    minUptakeTemp: 8,      // °C — tuber growth and N uptake stall below 8°C
+    maxWindSpeed: 20,      // km/h
+    minRainFreeHours: 48,  // h
+    maxSoilMoisture: 0.38, // m³/m³
+  },
+  acceptedFertilizers: [
+    { name: 'KAS (Kalkammonsalpeter)', useCase: 'Hoofd-N gift — voor of bij poten' },
+    { name: 'Patentkali (MgSO₄ + K₂SO₄)', useCase: 'K + Mg — verbetert knolopbouw en kwaliteit' },
+    { name: 'Tripel Superfosfaat (TSP)', useCase: 'P — basisgift bij grondbewerking' },
+    { name: 'Ammoniumsulfaat', useCase: 'N + S — bijbemesting, verlaagt pH lokaal' },
+    { name: 'NP/NPK vloeibaar', useCase: 'Startgift via rij — snel beschikbaar' },
+  ],
+  acceptedPesticides: [
+    { name: 'Metalaxyl-M + Mancozeb', useCase: 'Phytophthora — preventieve basisgift (7-daags schema)' },
+    { name: 'Cymoxanil', useCase: 'Phytophthora — curatief na infectieperiode (24-48u venster)' },
+    { name: 'Fluazinam', useCase: 'Phytophthora — contactmiddel, hoge regenvastheid' },
+    { name: 'Deltamethrin (pyrethroïde)', useCase: 'Colorado kever — topje aanslag bestrijding' },
+    { name: 'Dimethoaat', useCase: 'Bladluis / virusziekten — systemisch, vroeg seizoen' },
+  ],
 };

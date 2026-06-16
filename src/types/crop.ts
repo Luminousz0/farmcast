@@ -65,6 +65,22 @@ export interface LateBlightConfig {
   pressureHoursThreshold: number;
 }
 
+export interface FertilizationThresholds {
+  /** Min air temp °C — below this soil biology is too slow for N uptake */
+  minUptakeTemp: number;
+  /** Max wind speed km/h — above this spread accuracy is poor */
+  maxWindSpeed: number;
+  /** Min consecutive rain-free hours required before + after application */
+  minRainFreeHours: number;
+  /** Max soil moisture m³/m³ — above this field is too wet for machinery */
+  maxSoilMoisture: number;
+}
+
+export interface CropInput {
+  name: string;
+  useCase: string;
+}
+
 export interface CropConfig {
   id: string;
   name: string;
@@ -80,4 +96,10 @@ export interface CropConfig {
   lateBlight?: LateBlightConfig;
   /** Present only on crops susceptible to Septoria (Zymoseptoria tritici) */
   septoria?: SeptoriaConfig;
+  /** Weather-driven fertilization timing thresholds */
+  fertilization?: FertilizationThresholds;
+  /** Accepted fertilizer types for this crop (NL/EU agronomic practice) */
+  acceptedFertilizers?: CropInput[];
+  /** Accepted pesticide/fungicide active ingredient categories (CTGB-registered classes) */
+  acceptedPesticides?: CropInput[];
 }

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import type { DailyForecast, PointForecast } from "@/types/weather";
 import type { ConditionScore, CropConfig } from "@/types/crop";
-import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence, MowingWindowInfo, IrrigationAdvice } from "@/lib/evaluate";
-import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoilIntelligence, computeMowingWindow, computeIrrigationAdvice } from "@/lib/evaluate";
+import type { CurrentAdvice, DayWindowScore, SprayIntelligence, SoilIntelligence, MowingWindowInfo, IrrigationAdvice, FertilizationAdvice } from "@/lib/evaluate";
+import { scoreCurrentConditions, scoreDay, computeSprayIntelligence, computeSoilIntelligence, computeMowingWindow, computeIrrigationAdvice, computeFertilizationAdvice } from "@/lib/evaluate";
 import { ALL_CROPS } from "@/data/crops";
 import { describeWeatherCode } from "@/lib/weatherCode";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
@@ -493,6 +493,122 @@ function IrrigationCard({ advice }: { advice: IrrigationAdvice }) {
   );
 }
 
+// ── Fertilization advice card ────────────────────────────────────────────────
+
+function FertilizationCard({ advice }: { advice: FertilizationAdvice }) {
+  const color = SCORE_COLOR[advice.score];
+  return (
+    <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5">
+      <div className="mb-2 text-[11px] font-medium text-white/40">Bemesting</div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <div
+            className="h-2 w-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: color, boxShadow: `0 0 6px 1px ${color}66` }}
+          />
+          <span className="text-[11px] font-semibold" style={{ color }}>
+            {advice.score === 'go' ? 'Goed moment' : advice.score === 'caution' ? 'Let op' : 'Niet nu'}
+          </span>
+        </div>
+        <div className="h-3 w-px bg-white/10 hidden sm:block" />
+        <span className="text-[10px] text-white/40 leading-snug">{advice.reason}</span>
+      </div>
+      <div className="mt-1.5 text-[10px] text-white/30">
+        Droog venster:{' '}
+        <span className="tabular-nums text-white/50">{advice.rainFreeHours}u</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Crop input list card ──────────────────────────────────────────────────────
+
+function InputListCard({ crop, diseaseActive }: { crop: CropConfig; diseaseActive: boolean }) {
+  const [open, setOpen] = useState(false);
+
+  const hasFertilizers = crop.acceptedFertilizers && crop.acceptedFertilizers.length > 0;
+  const hasPesticides = crop.acceptedPesticides && crop.acceptedPesticides.length > 0;
+
+  if (!hasFertilizers && !hasPesticides) return null;
+
+  return (
+    <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.025] overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-3 py-2.5 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium text-white/40">Middelen &amp; meststoffen</span>
+          {diseaseActive && (
+            <span
+              className="rounded-md px-1.5 py-0.5 text-[9px] font-semibold"
+              style={{ background: 'rgba(207,90,62,0.14)', color: '#cf5a3e', border: '1px solid rgba(207,90,62,0.3)' }}
+            >
+              Druk actief
+            </span>
+          )}
+        </div>
+        <span className={`text-[10px] text-white/30 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-white/[0.05] px-3 pb-3 pt-2 space-y-3">
+              {hasFertilizers && (
+                <div>
+                  <div className="mb-1.5 text-[10px] font-medium text-white/35">Meststoffen</div>
+                  <div className="space-y-1.5">
+                    {crop.acceptedFertilizers!.map((f, i) => (
+                      <div key={i} className="flex flex-col gap-0.5">
+                        <span className="text-[11px] font-medium text-white/70">{f.name}</span>
+                        <span className="text-[10px] text-white/35">{f.useCase}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {hasFertilizers && hasPesticides && (
+                <div className="border-t border-white/[0.05]" />
+              )}
+
+              {hasPesticides && (
+                <div>
+                  <div className="mb-1.5 text-[10px] font-medium text-white/35">Gewasbeschermingsmiddelen</div>
+                  <div className="space-y-1.5">
+                    {crop.acceptedPesticides!.map((p, i) => (
+                      <div key={i} className="flex flex-col gap-0.5">
+                        <span className="text-[11px] font-medium text-white/70">{p.name}</span>
+                        <span className="text-[10px] text-white/35">{p.useCase}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <a
+                href="https://toelatingen.ctgb.nl/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 block text-[10px] text-white/25 hover:text-white/50 transition"
+              >
+                Officieel CTGB-toelatingenregister →
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ── 7-day window row ────────────────────────────────────────────────────────
 
 interface BestWindowRowProps {
@@ -721,6 +837,9 @@ export function ConditionPanel({
   const mowingWindow = forecast?.daily ? computeMowingWindow(forecast.daily, selectedCrop) : null;
   const irrigationAdvice = forecast?.daily ? computeIrrigationAdvice(forecast.daily) : null;
   const showIrrigation = irrigationAdvice && !selectedCrop.mowing;
+  const fertilizationAdvice = (forecast?.hourly && forecast?.daily)
+    ? computeFertilizationAdvice(forecast.hourly, forecast.daily, selectedCrop)
+    : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -888,6 +1007,18 @@ export function ConditionPanel({
 
             {/* Soil intelligence — trafficability, ground frost, disease pressure */}
             {soilIntel && <SoilIntelCard intel={soilIntel} />}
+
+            {/* Fertilization timing advice */}
+            {fertilizationAdvice && <FertilizationCard advice={fertilizationAdvice} />}
+
+            {/* Crop input reference — fertilizers + pesticides, collapsible */}
+            <InputListCard
+              crop={selectedCrop}
+              diseaseActive={
+                (soilIntel?.lateBlightScore === 'high' || soilIntel?.lateBlightScore === 'low') ||
+                (soilIntel?.septoriaScore === 'high' || soilIntel?.septoriaScore === 'low')
+              }
+            />
 
             {/* The planning horizon: 7-day best window dots */}
             {forecast.daily.length > 0 && windowScores.length > 0 && (

@@ -227,6 +227,74 @@ export function computeSoilIntelligence(
   };
 }
 
+// ── Fertilization advice ─────────────────────────────────────────────────────
+
+export interface FertilizationAdvice {
+  score: ConditionScore;
+  reason: string;
+  /** Consecutive rain-free hours from now (precip < 0.1 mm/h) */
+  rainFreeHours: number;
+}
+
+/**
+ * Weather-driven fertilization timing advice.
+ * Checks: rain-free window, soil moisture, temperature, and wind.
+ * Returns null when crop has no fertilization thresholds defined.
+ */
+export function computeFertilizationAdvice(
+  hourly: HourlyForecast[],
+  daily: DailyForecast[],
+  crop: CropConfig,
+): FertilizationAdvice | null {
+  if (!crop.fertilization || hourly.length === 0) return null;
+  const { minUptakeTemp, maxWindSpeed, minRainFreeHours, maxSoilMoisture } = crop.fertilization;
+
+  const h0 = hourly[0];
+
+  // Count consecutive rain-free hours
+  let rainFreeHours = 0;
+  for (const h of hourly) {
+    if (h.precipitation < 0.1) rainFreeHours++;
+    else break;
+  }
+
+  // Rain expected soon (next 24h daily sum)
+  const rainToday = daily[0]?.precipitation ?? 0;
+  const rainTomorrow = daily[1]?.precipitation ?? 0;
+
+  const soilMoisture = h0.soilMoisture0to1cm;
+  const soilTooWet = soilMoisture !== undefined && soilMoisture > maxSoilMoisture;
+  const tooCold = h0.temperature < minUptakeTemp;
+  const tooWindy = h0.windSpeed > maxWindSpeed;
+
+  // STOP conditions
+  if (soilTooWet) {
+    return { score: 'stop', reason: `Bodem te nat — machines beschadigen structuur`, rainFreeHours };
+  }
+  if (rainFreeHours < 2 && rainToday > 2) {
+    return { score: 'stop', reason: `Neerslag — meststof spoelt af (${rainToday.toFixed(1)} mm vandaag)`, rainFreeHours };
+  }
+  if (tooCold) {
+    return { score: 'stop', reason: `Te koud voor N-opname (${h0.temperature.toFixed(1)}°C, min ${minUptakeTemp}°C)`, rainFreeHours };
+  }
+  if (tooWindy) {
+    return { score: 'stop', reason: `Wind te sterk voor strooinauwkeurigheid (${Math.round(h0.windSpeed)} km/u)`, rainFreeHours };
+  }
+
+  // CAUTION conditions
+  if (rainFreeHours < minRainFreeHours) {
+    return { score: 'caution', reason: `Droog venster te kort — ${rainFreeHours}u droog, min ${minRainFreeHours}u nodig`, rainFreeHours };
+  }
+  if (rainTomorrow > 5) {
+    return { score: 'caution', reason: `Zware neerslag morgen (${rainTomorrow.toFixed(1)} mm) — risico op uitspoeling`, rainFreeHours };
+  }
+  if (rainTomorrow > 1) {
+    return { score: 'caution', reason: `Neerslag verwacht morgen (${rainTomorrow.toFixed(1)} mm) — monitor`, rainFreeHours };
+  }
+
+  return { score: 'go', reason: `Goede omstandigheden — ${rainFreeHours}u droog venster`, rainFreeHours };
+}
+
 // ── Mowing window ─────────────────────────────────────────────────────────────
 
 /**
